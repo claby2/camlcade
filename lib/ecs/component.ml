@@ -21,27 +21,25 @@ module Make (Base : Base) : T with type t = Base.t = struct
   let id = Id.Component.next ()
 end
 
-module Transform = Make (struct
+module Transform = struct
   type t = Vec3.t
-  type component += Transform of t
+  type component += T of t
 
-  let of_component = function
-    | Transform t -> t
-    | _ -> failwith "Invalid component"
+  let of_component = function T t -> t | _ -> failwith "Invalid component"
+  let to_component t = T t
+end
 
-  let to_component t = Transform t
-end)
+module TransformC = Make (Transform)
 
-module Health = Make (struct
+module Health = struct
   type t = int
-  type component += Health of t
+  type component += T of t
 
-  let of_component = function
-    | Health t -> t
-    | _ -> failwith "Invalid component"
+  let of_component = function T t -> t | _ -> failwith "Invalid component"
+  let to_component t = T t
+end
 
-  let to_component t = Health t
-end)
+module HealthC = Make (Health)
 
 type value = Value : (module T with type t = 'a) * 'a -> value
 
@@ -49,3 +47,6 @@ let make : type a. (module T with type t = a) -> a -> value =
  fun component value -> Value (component, value)
 
 let id : value -> Id.Component.t = function Value ((module C), _) -> C.id
+
+let extract : value -> component = function
+  | Value ((module C), value) -> C.to_component value
