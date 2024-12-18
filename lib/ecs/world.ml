@@ -20,6 +20,9 @@ let empty =
     component_index = Hashtbl.create 0;
   }
 
+let get_archetype t entity =
+  Hashtbl.find t.archetype_index (Hashtbl.find t.entity_index entity)
+
 (* Add a new entity and return its id *)
 let add_entity t =
   let entity = Id.Entity.next () in
@@ -28,17 +31,12 @@ let add_entity t =
 
 (* Get the value of a specific component for a given entity if it exists *)
 let get_component t component entity =
-  match Hashtbl.find_opt t.entity_index entity with
-  | Some archetype_id -> (
-      match Hashtbl.find_opt t.archetype_index archetype_id with
-      | Some archetype -> Archetype.get_component archetype component entity
-      | None -> None)
-  | None -> None
+  let archetype = get_archetype t entity in
+  Archetype.get_component archetype component entity
 
 (* Add a component to an entity *)
-let add_component t (component : Component.value) entity =
-  let archetype_id = Hashtbl.find t.entity_index entity in
-  let archetype = Hashtbl.find t.archetype_index archetype_id in
+let add_component t component entity =
+  let archetype = get_archetype t entity in
   let archetype_edges = Archetype.edges archetype in
   let new_archetype =
     match
@@ -58,10 +56,47 @@ let add_component t (component : Component.value) entity =
   Archetype.add_entity new_archetype entity
     (component :: Archetype.extract_entity archetype entity);
   Hashtbl.replace t.archetype_index new_archetype.hash new_archetype;
-  Hashtbl.replace t.entity_index entity new_archetype.hash
+  Hashtbl.replace t.entity_index entity new_archetype.hash;
+  let new_archetype_set =
+    match Hashtbl.find_opt t.component_index (Component.id component) with
+    | None -> ArchetypeHashSet.singleton new_archetype.hash
+    | Some set -> ArchetypeHashSet.add new_archetype.hash set
+  in
+  Hashtbl.replace t.component_index (Component.id component) new_archetype_set
 
 (* Remove a component from an entity *)
-let remove_component _t _component _entity = failwith "Not implemented"
+let remove_component t component_id entity =
+  let archetype = get_archetype t entity in
+  let archetype_edges = Archetype.edges archetype in
+  let new_archetype =
+    match Archetype.Edges.find_remove_opt archetype_edges component_id with
+    | Some hash -> Hashtbl.find t.archetype_index hash
+    | None ->
+        let new_archetype =
+          Archetype.create
+            (Archetype.components archetype
+            |> List.filter (fun c -> c <> component_id))
+        in
+        Archetype.Edges.replace_remove archetype_edges component_id
+          (Some new_archetype.hash);
+        new_archetype
+  in
+  Archetype.add_entity new_archetype entity
+    (Archetype.extract_entity archetype entity
+    |> List.filter (fun c -> Component.id c <> component_id));
+  Hashtbl.replace t.archetype_index new_archetype.hash new_archetype;
+  Hashtbl.replace t.entity_index entity new_archetype.hash;
+  let new_archetype_set =
+    match Hashtbl.find_opt t.component_index component_id with
+    | None -> ArchetypeHashSet.singleton new_archetype.hash
+    | Some set -> ArchetypeHashSet.add new_archetype.hash set
+  in
+  Hashtbl.replace t.component_index component_id new_archetype_set
 
 (* Remove an entity from the world *)
-let remove_entity _t _entity = failwith "Not implemented"
+let remove_entity t entity =
+  let archetype = get_archetype t entity in
+  Archetype.extract_entity archetype entity |> ignore;
+  Hashtbl.remove t.entity_index entity
+(* TODO: Should we remove the archetype if it's empty? i.e. should it be
+   removed from the archetype index and/or its hash be removed from component index? *)
