@@ -12,4 +12,4 @@ end
 
 module Component = Make ()
 module Entity = Make ()
-module Archetype = Make ()
+module ComponentSet = Set.Make (Component)

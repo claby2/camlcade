@@ -1,75 +1,67 @@
-module ArchetypeSet = Set.Make (Id.Archetype)
+module ArchetypeHashSet = Set.Make (Archetype.Hash)
 
 type t = {
-  archetype_index : (Id.Archetype.t, Archetype.t) Hashtbl.t;
+  archetype_index : (Archetype.Hash.t, Archetype.t) Hashtbl.t;
   (* TODO: entity id -> (archetype, row) *)
-  entity_index : (Id.Entity.t, Archetype.t) Hashtbl.t;
+  entity_index : (Id.Entity.t, Archetype.Hash.t) Hashtbl.t;
   (* TODO: component id -> (archetype id -> column) *)
-  component_index : (Id.Component.t, ArchetypeSet.t) Hashtbl.t;
+  component_index : (Id.Component.t, ArchetypeHashSet.t) Hashtbl.t;
 }
 
-let create =
+(* Create a new empty world *)
+let empty =
+  (* Start with the empty archetype in the archetype index *)
+  let archetype_index = Hashtbl.create 0 in
+  let empty_archetype = Archetype.empty in
+  Hashtbl.add archetype_index empty_archetype.hash empty_archetype;
   {
-    archetype_index = Hashtbl.create 0;
+    archetype_index;
     entity_index = Hashtbl.create 0;
     component_index = Hashtbl.create 0;
   }
 
-let get_archetype t archetype =
-  let archetype_id = Archetype.id archetype in
-  match Hashtbl.find_opt t.archetype_index archetype_id with
-  | Some archetype -> archetype
-  | None ->
-      Hashtbl.add t.archetype_index archetype_id archetype;
-      archetype
-
+(* Add a new entity and return its id *)
 let add_entity t =
   let entity = Id.Entity.next () in
-  let empty_archetype = get_archetype t Archetype.empty in
-  (* No need to modify component_index here since the entity has no components *)
-  Hashtbl.add t.entity_index entity empty_archetype;
+  Hashtbl.add t.entity_index entity (Archetype.hash Archetype.empty);
   entity
 
+(* Get the value of a specific component for a given entity if it exists *)
 let get_component t component entity =
-  let archetype = Hashtbl.find t.entity_index entity in
-  ()
-  (*let column =*)
-  (*  Hashtbl.find_opt (Hashtbl.find t.component_index component) archetype.id*)
-  (*in*)
-  (*match column with*)
-  (*| None -> None*)
-  (*| Some column -> Some archetype.table.(column).(row)*)
+  match Hashtbl.find_opt t.entity_index entity with
+  | Some archetype_id -> (
+      match Hashtbl.find_opt t.archetype_index archetype_id with
+      | Some archetype -> Archetype.get_component archetype component entity
+      | None -> None)
+  | None -> None
 
-let add_component t component entity =
-  let current_archetype = Hashtbl.find t.entity_index entity in
-  (* Do archetype graph search to find next archetype *)
-  let next_archetype = current_archetype in
-  (* Move entity to next archetype, move_entity *)
-  Hashtbl.replace t.entity_index entity next_archetype
+(* Add a component to an entity *)
+let add_component t (component : Component.value) entity =
+  let archetype_id = Hashtbl.find t.entity_index entity in
+  let archetype = Hashtbl.find t.archetype_index archetype_id in
+  let archetype_edges = Archetype.edges archetype in
+  let new_archetype =
+    match
+      Archetype.Edges.find_add_opt archetype_edges (Component.id component)
+    with
+    | Some hash -> Hashtbl.find t.archetype_index hash
+    | None ->
+        let new_archetype =
+          Archetype.create
+            (Component.id component :: Archetype.components archetype)
+        in
+        Archetype.Edges.replace_add archetype_edges (Component.id component)
+          (Some new_archetype.hash);
+        new_archetype
+  in
+  (* Move entity from old archetype to new archetype *)
+  Archetype.add_entity new_archetype entity
+    (component :: Archetype.extract_entity archetype entity);
+  Hashtbl.replace t.archetype_index new_archetype.hash new_archetype;
+  Hashtbl.replace t.entity_index entity new_archetype.hash
 
-(*let add_entity t =*)
-(*  let entity = Id.Entity.next () in*)
-(*  Hashtbl.add t.entities entity (Hashtbl.create 0);*)
-(*  entity*)
-(**)
-(*let remove_entity t entity = Hashtbl.remove t.entities entity*)
-(**)
-(*let add_component t entity component =*)
-(*  let components = Hashtbl.find t.entities entity in*)
-(*  let id = Component.id component in*)
-(*  Hashtbl.replace components id component*)
-(**)
-(*let remove_component t entity component =*)
-(*  let components = Hashtbl.find t.entities entity in*)
-(*  let id = Component.id component in*)
-(*  Hashtbl.remove components id*)
-(**)
-(*let add_system t system = t.systems <- system :: t.systems*)
-(*let run_systems t = List.iter (fun system -> system t.entities) t.systems*)
-(**)
-(*let print t =*)
-(*  Hashtbl.iter*)
-(*    (fun entity components ->*)
-(*      Printf.printf "Entity: %d\n" entity;*)
-(*      Hashtbl.iter (fun id _ -> Printf.printf "- Component: %d\n" id) components)*)
-(*    t.entities*)
+(* Remove a component from an entity *)
+let remove_component _t _component _entity = failwith "Not implemented"
+
+(* Remove an entity from the world *)
+let remove_entity _t _entity = failwith "Not implemented"
