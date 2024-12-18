@@ -54,7 +54,7 @@ let add_component t component entity =
   in
   (* Move entity from old archetype to new archetype *)
   Archetype.add_entity new_archetype entity
-    (component :: Archetype.extract_entity archetype entity);
+    (Archetype.extract_entity archetype entity @ [ component ]);
   Hashtbl.replace t.archetype_index new_archetype.hash new_archetype;
   Hashtbl.replace t.entity_index entity new_archetype.hash;
   let new_archetype_set =

@@ -2,48 +2,45 @@ open Math
 
 type component = ..
 
-module type Base = sig
+module type S = sig
   type t
 
+  val id : Id.Component.t
   val of_component : component -> t
   val to_component : t -> component
 end
 
-module type T = sig
+module Make (Base : sig
+  type t
+end) : S with type t = Base.t = struct
   include Base
 
-  val id : Id.Component.t
-end
-
-module Make (Base : Base) : T with type t = Base.t = struct
-  include Base
+  type component += T of t
 
   let id = Id.Component.next ()
+  let of_component = function T t -> t | _ -> failwith "Invalid component"
+  let to_component t = T t
 end
 
 module Transform = struct
-  type t = Vec3.t
-  type component += T of t
+  module T = struct
+    type t = Vec3.t
+  end
 
-  let of_component = function T t -> t | _ -> failwith "Invalid component"
-  let to_component t = T t
+  module C = Make (T)
 end
-
-module TransformC = Make (Transform)
 
 module Health = struct
-  type t = int
-  type component += T of t
+  module T = struct
+    type t = int
+  end
 
-  let of_component = function T t -> t | _ -> failwith "Invalid component"
-  let to_component t = T t
+  module C = Make (T)
 end
 
-module HealthC = Make (Health)
+type value = Value : (module S with type t = 'a) * 'a -> value
 
-type value = Value : (module T with type t = 'a) * 'a -> value
-
-let make : type a. (module T with type t = a) -> a -> value =
+let make : type a. (module S with type t = a) -> a -> value =
  fun component value -> Value (component, value)
 
 let id : value -> Id.Component.t = function Value ((module C), _) -> C.id
