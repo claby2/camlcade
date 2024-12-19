@@ -42,9 +42,9 @@ let test_add_entity () =
     Archetype.create (Id.ComponentSet.of_list [ Bar.C.id; Foo.C.id ])
   in
   Archetype.add_entity archetype 0
-    [ Component.make (module Foo.C) 1; Component.make (module Bar.C) 2 ];
+    [ Component.pack (module Foo.C) 1; Component.pack (module Bar.C) 2 ];
   Archetype.add_entity archetype 1
-    [ Component.make (module Foo.C) 3; Component.make (module Bar.C) 4 ];
+    [ Component.pack (module Foo.C) 3; Component.pack (module Bar.C) 4 ];
   assert (
     try
       Archetype.add_entity archetype 3 [];
@@ -52,13 +52,13 @@ let test_add_entity () =
     with Archetype.Invalid_components -> true);
   assert (
     try
-      Archetype.add_entity archetype 3 [ Component.make (module Foo.C) 5 ];
+      Archetype.add_entity archetype 3 [ Component.pack (module Foo.C) 5 ];
       false
     with Archetype.Invalid_components -> true);
   assert (
     try
       Archetype.add_entity archetype 3
-        [ Component.make (module Bar.C) 6; Component.make (module Bar.C) 7 ];
+        [ Component.pack (module Bar.C) 6; Component.pack (module Bar.C) 7 ];
       false
     with Archetype.Invalid_components -> true)
 
@@ -74,7 +74,7 @@ let test_extract_entity () =
 
   (* Add entity without calling add_entity *)
   Archetype.add_entity archetype 0
-    [ Component.make (module Foo.C) 1; Component.make (module Bar.C) 2 ];
+    [ Component.pack (module Foo.C) 1; Component.pack (module Bar.C) 2 ];
 
   assert (
     Archetype.extract_entity archetype 0

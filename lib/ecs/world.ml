@@ -171,7 +171,7 @@ let evaluate_query w (query : Query.t) =
                            Archetype.get_component archetype c e
                            |> Option.value
                                 ~default:
-                                  (Component.make (module Component.None.C) ()))
+                                  (Component.pack (module Component.None.C) ()))
                 )))
   |> Seq.concat |> List.of_seq
 

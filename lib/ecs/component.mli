@@ -1,12 +1,11 @@
-type component
-type value
+type base
 
 module type S = sig
   type t
 
   val id : Id.Component.t
-  val of_component : component -> t
-  val to_component : t -> component
+  val of_base : base -> t
+  val to_base : t -> base
 end
 
 module Make (Base : sig
@@ -29,6 +28,8 @@ module None : sig
   module C : S with type t = T.t
 end
 
-val make : 'a. (module S with type t = 'a) -> 'a -> value
-val id : value -> Id.Component.t
-val extract : value -> component
+type packed
+
+val pack : 'a. (module S with type t = 'a) -> 'a -> packed
+val unpack : packed -> base
+val id : packed -> Id.Component.t

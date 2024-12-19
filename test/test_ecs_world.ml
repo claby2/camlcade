@@ -20,9 +20,9 @@ let test_evaluate_query () =
   let world = World.create () in
   let player = World.add_entity world in
   World.add_component world
-    (Component.make (module Component.Transform.C) (Math.Vec3.make 0. 0. 0.))
+    (Component.pack (module Component.Transform.C) (Math.Vec3.make 0. 0. 0.))
     player;
-  World.add_component world (Component.make (module Foo.C) 0) player;
+  World.add_component world (Component.pack (module Foo.C) 0) player;
 
   let result =
     World.evaluate_query world (Query.create [ Query.Required Switch.C.id ])
@@ -54,7 +54,7 @@ let test_systems () =
       | [] -> ()
       | (_, [ value ]) :: rest ->
           let transform =
-            value |> Component.extract |> Component.Transform.C.of_component
+            value |> Component.unpack |> Component.Transform.C.of_base
           in
           Math.Vec3.set_x transform (Math.Vec3.x transform +. 1.);
           aux rest
@@ -67,17 +67,16 @@ let test_systems () =
   let enemy = World.add_entity world in
   assert (player <> enemy);
   World.add_component world
-    (Component.make (module Component.Transform.C) (Math.Vec3.make 0. 0. 0.))
+    (Component.pack (module Component.Transform.C) (Math.Vec3.make 0. 0. 0.))
     player;
   let component = World.get_component world Component.Transform.C.id player in
   assert (
-    Option.get component |> Component.extract
-    |> Component.Transform.C.of_component = Math.Vec3.zero);
-  World.add_component world (Component.make (module Switch.C) false) player;
-  World.add_component world (Component.make (module Switch.C) true) player;
+    Option.get component |> Component.unpack |> Component.Transform.C.of_base
+    = Math.Vec3.zero);
+  World.add_component world (Component.pack (module Switch.C) false) player;
+  World.add_component world (Component.pack (module Switch.C) true) player;
   let component = World.get_component world Switch.C.id player in
-  assert (
-    Option.get component |> Component.extract |> Switch.C.of_component = true);
+  assert (Option.get component |> Component.unpack |> Switch.C.of_base = true);
   World.remove_component world Switch.C.id player;
   let component = World.get_component world Switch.C.id player in
   assert (component = None);
@@ -88,7 +87,7 @@ let test_systems () =
   World.run_systems world System.Update;
   assert (
     World.get_component world Component.Transform.C.id player
-    |> Option.get |> Component.extract |> Component.Transform.C.of_component
+    |> Option.get |> Component.unpack |> Component.Transform.C.of_base
     = Math.Vec3.make 2. 0. 0.)
 
 let () =

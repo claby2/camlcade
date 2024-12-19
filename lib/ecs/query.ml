@@ -29,7 +29,7 @@ let terms q = q.terms
 let filter q = q.filter
 
 module Result = struct
-  type t = (Id.Entity.t * Component.value list) list
+  type t = (Id.Entity.t * Component.packed list) list
 end
 
 (* SCRATCH:

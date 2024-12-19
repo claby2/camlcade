@@ -18,5 +18,5 @@ val terms : t -> term list
 val filter : t -> Filter.t
 
 module Result : sig
-  type t = (Id.Entity.t * Component.value list) list
+  type t = (Id.Entity.t * Component.packed list) list
 end

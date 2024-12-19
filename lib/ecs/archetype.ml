@@ -40,7 +40,7 @@ type t = {
   components : Id.ComponentSet.t;
   mutable entities : Id.EntitySet.t;
   (* TODO: Use SparseSet *)
-  table : (Id.Component.t, (Id.Entity.t, Component.value) Hashtbl.t) Hashtbl.t;
+  table : (Id.Component.t, (Id.Entity.t, Component.packed) Hashtbl.t) Hashtbl.t;
   (* edges[component] = (option<add>, option<remove>) *)
   edges : (Id.Component.t, Hash.t) Edges.t;
 }

@@ -1,25 +1,25 @@
 open Math
 
-type component = ..
+type base = ..
 
 module type S = sig
   type t
 
   val id : Id.Component.t
-  val of_component : component -> t
-  val to_component : t -> component
+  val of_base : base -> t
+  val to_base : t -> base
 end
 
-module Make (Base : sig
+module Make (B : sig
   type t
-end) : S with type t = Base.t = struct
-  include Base
+end) : S with type t = B.t = struct
+  include B
 
-  type component += T of t
+  type base += T of t
 
   let id = Id.Component.next ()
-  let of_component = function T t -> t | _ -> failwith "Invalid component"
-  let to_component t = T t
+  let of_base = function T t -> t | _ -> failwith "Invalid component"
+  let to_base t = T t
 end
 
 module Transform = struct
@@ -40,12 +40,12 @@ module None = struct
   module C = Make (T)
 end
 
-type value = Value : (module S with type t = 'a) * 'a -> value
+type packed = Packed : (module S with type t = 'a) * 'a -> packed
 
-let make : type a. (module S with type t = a) -> a -> value =
- fun component value -> Value (component, value)
+let pack : type a. (module S with type t = a) -> a -> packed =
+ fun component value -> Packed (component, value)
 
-let id : value -> Id.Component.t = function Value ((module C), _) -> C.id
+let unpack : packed -> base = function
+  | Packed ((module C), value) -> C.to_base value
 
-let extract : value -> component = function
-  | Value ((module C), value) -> C.to_component value
+let id : packed -> Id.Component.t = function Packed ((module C), _) -> C.id
