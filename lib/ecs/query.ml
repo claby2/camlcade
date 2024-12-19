@@ -7,6 +7,7 @@ module Filter = struct
     | Or of t * t
     | Wildcard
 
+  (* Returns true if the given component set matches the filter *)
   let matches f components =
     let rec aux f components =
       match f with
@@ -20,11 +21,7 @@ module Filter = struct
     aux f components
 end
 
-type term =
-  | Required of Id.Component.t
-  | Optional of Id.Component.t
-  | AnyOf of Id.Component.t list
-
+type term = Required of Id.Component.t | Optional of Id.Component.t
 type t = { terms : term list; filter : Filter.t }
 
 let create ?(filter = Filter.Wildcard) terms = { terms; filter }

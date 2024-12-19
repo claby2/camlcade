@@ -1,6 +1,7 @@
 module ArchetypeHashSet = Set.Make (Archetype.Hash)
 
 type t = {
+  empty_archetype : Archetype.t;
   archetype_index : (Archetype.Hash.t, Archetype.t) Hashtbl.t;
   (* TODO: entity id -> (archetype, row) *)
   entity_index : (Id.Entity.t, Archetype.Hash.t) Hashtbl.t;
@@ -27,12 +28,13 @@ let to_string w =
        w.component_index "\n")
 
 (* Create a new empty world *)
-let empty =
+let create () =
   (* Start with the empty archetype in the archetype index *)
   let archetype_index = Hashtbl.create 0 in
-  let empty_archetype = Archetype.empty in
+  let empty_archetype = Archetype.empty () in
   Hashtbl.add archetype_index empty_archetype.hash empty_archetype;
   {
+    empty_archetype;
     archetype_index;
     entity_index = Hashtbl.create 0;
     component_index = Hashtbl.create 0;
@@ -45,7 +47,8 @@ let get_archetype w entity =
 (* Add a new entity and return its id *)
 let add_entity w =
   let entity = Id.Entity.next () in
-  Hashtbl.add w.entity_index entity (Archetype.hash Archetype.empty);
+  Hashtbl.add w.entity_index entity (Archetype.hash w.empty_archetype);
+  Archetype.add_entity w.empty_archetype entity [];
   entity
 
 (* Get the value of a specific component for a given entity if it exists *)
@@ -76,12 +79,14 @@ let add_component w component entity =
     (Archetype.extract_entity archetype entity @ [ component ]);
   Hashtbl.replace w.archetype_index new_archetype.hash new_archetype;
   Hashtbl.replace w.entity_index entity new_archetype.hash;
-  let new_archetype_set =
-    match Hashtbl.find_opt w.component_index (Component.id component) with
-    | None -> ArchetypeHashSet.singleton new_archetype.hash
-    | Some set -> ArchetypeHashSet.add new_archetype.hash set
-  in
-  Hashtbl.replace w.component_index (Component.id component) new_archetype_set
+  new_archetype.components |> Id.ComponentSet.to_seq
+  |> Seq.iter (fun c ->
+         let new_archetype_set =
+           match Hashtbl.find_opt w.component_index c with
+           | None -> ArchetypeHashSet.singleton new_archetype.hash
+           | Some set -> ArchetypeHashSet.add new_archetype.hash set
+         in
+         Hashtbl.replace w.component_index c new_archetype_set)
 
 (* Remove a component from an entity *)
 let remove_component w component_id entity =
@@ -124,9 +129,6 @@ let add_system w schedule query system =
   System.Registry.register w.systems schedule query system
 
 let evaluate_query w (query : Query.t) =
-  (* 1. Fetch all "matching" archetypes
-     2. For each archetype, fetch all entities and their components and only
-        include the components that match the query *)
   let required_components =
     query.terms
     |> List.filter_map (function Query.Required c -> Some c | _ -> None)
@@ -146,11 +148,27 @@ let evaluate_query w (query : Query.t) =
          None
     |> Option.value ~default:ArchetypeHashSet.empty
   in
-  candidate_archetypes |> ArchetypeHashSet.elements
-  |> List.map (fun hash ->
+  candidate_archetypes |> ArchetypeHashSet.to_seq
+  |> Seq.filter_map (fun hash ->
          let archetype = Hashtbl.find w.archetype_index hash in
-         Archetype.get_from_query archetype query)
-  |> List.flatten
+         if Query.Filter.matches query.filter archetype.components then
+           Some archetype
+         else None)
+  |> Seq.map (fun archetype ->
+         archetype.entities |> Id.EntitySet.to_seq
+         |> Seq.map (fun e ->
+                ( e,
+                  query.terms
+                  |> List.map (function
+                       | Query.Required c ->
+                           Archetype.get_component archetype c e |> Option.get
+                       | Query.Optional c ->
+                           Archetype.get_component archetype c e
+                           |> Option.value
+                                ~default:
+                                  (Component.make (module Component.None.C) ()))
+                )))
+  |> Seq.concat |> List.of_seq
 
 let run_systems w schedule =
   System.Registry.fetch w.systems schedule

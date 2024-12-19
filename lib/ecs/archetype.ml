@@ -1,5 +1,3 @@
-(* TODO: Archetype-based ECS *)
-
 module Hash = struct
   type t = int
 
@@ -18,7 +16,7 @@ module Edges = struct
 
   type ('a, 'b) t = ('a, 'b Edge.t) Hashtbl.t
 
-  let empty : ('a, 'b) t = Hashtbl.create 0
+  let empty () : ('a, 'b) t = Hashtbl.create 0
 
   let find_add_opt (e : ('a, 'b) t) key =
     match Hashtbl.find_opt e key with Some edge -> edge.add | None -> None
@@ -48,7 +46,9 @@ type t = {
 }
 
 let to_string a =
-  Printf.sprintf "{ hash = %d; table = %s; }" a.hash
+  Printf.sprintf "{ hash = %d; entities = %s; table = %s; }" a.hash
+    (a.entities |> Id.EntitySet.to_seq
+    |> Seq.fold_left (fun acc e -> Printf.sprintf "%s%d, " acc e) "")
     (Hashtbl.fold
        (fun k v acc ->
          Printf.sprintf "%s%d -> %s\n" acc k
@@ -57,13 +57,13 @@ let to_string a =
               v ""))
        a.table "")
 
-let empty =
+let empty () =
   {
     hash = Hashtbl.hash [];
     components = Id.ComponentSet.empty;
     entities = Id.EntitySet.empty;
     table = Hashtbl.create 0;
-    edges = Edges.empty;
+    edges = Edges.empty ();
   }
 
 let create components =
@@ -73,88 +73,53 @@ let create components =
     components;
     entities = Id.EntitySet.empty;
     table = Hashtbl.create 0;
-    edges = Edges.empty;
+    edges = Edges.empty ();
   }
 
 let hash a = a.hash
 let components a = a.components |> Id.ComponentSet.to_list
 let edges a = a.edges
 
+exception Entity_not_found
+
 (* Remove an entity from the archetype and return its components *)
 let extract_entity a e : Component.value list =
+  if not (Id.EntitySet.mem e a.entities) then raise Entity_not_found;
+  let res =
+    Id.ComponentSet.to_list a.components
+    |> List.map (fun cid ->
+           let table = Hashtbl.find a.table cid in
+           match Hashtbl.find_opt table e with
+           | Some c ->
+               Hashtbl.remove table e;
+               c
+           | None -> failwith "Entity not found, is this a bug?")
+  in
   a.entities <- Id.EntitySet.remove e a.entities;
-  Hashtbl.fold
-    (fun _ table acc ->
-      match Hashtbl.find_opt table e with
-      | Some c ->
-          Hashtbl.remove table e;
-          c :: acc
-      | None -> failwith "Entity not found, is this a bug?")
-    a.table []
+  res
+
+exception Invalid_components
 
 (* Add an entity to the archetype with the given components *)
 let add_entity a e (components : Component.value list) =
-  a.entities <- Id.EntitySet.add e a.entities;
-  components
-  |> List.iter (fun c ->
-         let id = Component.id c in
+  (* Convert components to a hash table from component id to component value *)
+  let components =
+    Hashtbl.of_seq
+      (components |> List.to_seq |> Seq.map (fun c -> (Component.id c, c)))
+  in
+  if Hashtbl.length components <> Id.ComponentSet.cardinal a.components then
+    raise Invalid_components;
+  components |> Hashtbl.to_seq
+  |> Seq.iter (fun (id, c) ->
          if not (Id.ComponentSet.mem id a.components) then
-           failwith "Component not in archetype";
+           raise Invalid_components;
          match Hashtbl.find_opt a.table id with
          | Some table -> Hashtbl.add table e c
          | None ->
              let table = Hashtbl.create 0 in
              Hashtbl.add table e c;
-             Hashtbl.add a.table id table)
-
-let get_from_query a (query : Query.t) =
-  if not (Query.Filter.matches query.filter a.components) then []
-  else
-    let exception Invalid_query in
-    try
-      (* entity -> component list *)
-      let result = Hashtbl.create 0 in
-      a.entities |> Id.EntitySet.iter (fun e -> Hashtbl.add result e []);
-      query.terms
-      |> List.rev
-         (* Respond to the terms in reverse order since components are added in reverse *)
-      |> List.iter (function
-           | Query.Required c -> (
-               match Hashtbl.find_opt a.table c with
-               | Some table ->
-                   (* This required component is present in the archetype, so we add it *)
-                   Hashtbl.iter
-                     (fun e c ->
-                       let cs = Hashtbl.find_opt result e in
-                       let cs = Option.value cs ~default:[] in
-                       Hashtbl.replace result e (c :: cs))
-                     table
-               | None ->
-                   (* This required component is not present in the archetype, so we short-circuit *)
-                   raise Invalid_query)
-           | Query.Optional c -> (
-               match Hashtbl.find_opt a.table c with
-               | Some table ->
-                   (* This optional component is present in the archetype, so we add it *)
-                   Hashtbl.iter
-                     (fun e c ->
-                       let cs = Hashtbl.find_opt result e in
-                       let cs = Option.value cs ~default:[] in
-                       Hashtbl.replace result e (c :: cs))
-                     table
-               | None ->
-                   (* This optional component is not present in the archetype,
-                      so we add a None component *)
-                   a.entities
-                   |> Id.EntitySet.iter (fun e ->
-                          let cs = Hashtbl.find_opt result e in
-                          let cs = Option.value cs ~default:[] in
-                          Hashtbl.replace result e
-                            (Component.make (module Component.None.C) () :: cs))
-               )
-           | Query.AnyOf _cs -> failwith "unimplemented");
-      Hashtbl.fold (fun e cs acc -> (e, cs) :: acc) result []
-    with Invalid_query -> []
+             Hashtbl.add a.table id table);
+  a.entities <- Id.EntitySet.add e a.entities
 
 let get_component a c e =
   match Hashtbl.find_opt a.table c with
