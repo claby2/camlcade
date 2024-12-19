@@ -37,30 +37,10 @@ let test_edges () =
   Archetype.Edges.replace_remove edges 0 None;
   assert (Archetype.Edges.find_remove_opt edges 0 = None)
 
-let test_extract_entity () =
-  let archetype = Archetype.create [ Bar.C.id; Foo.C.id ] in
-  assert (
-    try
-      Archetype.extract_entity archetype 0 |> ignore;
-      false
-    with Archetype.Entity_not_found -> true);
-
-  (* Add entity without calling add_entity *)
-  let table = Hashtbl.create 2 in
-  Hashtbl.add table Foo.C.id (Hashtbl.create 0);
-  Hashtbl.add table Bar.C.id (Hashtbl.create 0);
-  Hashtbl.add (Hashtbl.find table Foo.C.id) 0 (Component.make (module Foo.C) 1);
-  Hashtbl.add (Hashtbl.find table Bar.C.id) 0 (Component.make (module Bar.C) 2);
-  let archetype =
-    { archetype with entities = Id.EntitySet.singleton 0; table }
-  in
-
-  assert (
-    Archetype.extract_entity archetype 0
-    |> List.map Component.id = [ Foo.C.id; Bar.C.id ])
-
 let test_add_entity () =
-  let archetype = Archetype.create [ Bar.C.id; Foo.C.id ] in
+  let archetype =
+    Archetype.create (Id.ComponentSet.of_list [ Bar.C.id; Foo.C.id ])
+  in
   Archetype.add_entity archetype 0
     [ Component.make (module Foo.C) 1; Component.make (module Bar.C) 2 ];
   Archetype.add_entity archetype 1
@@ -82,8 +62,26 @@ let test_add_entity () =
       false
     with Archetype.Invalid_components -> true)
 
+let test_extract_entity () =
+  let archetype =
+    Archetype.create (Id.ComponentSet.of_list [ Bar.C.id; Foo.C.id ])
+  in
+  assert (
+    try
+      Archetype.extract_entity archetype 0 |> ignore;
+      false
+    with Archetype.Entity_not_found -> true);
+
+  (* Add entity without calling add_entity *)
+  Archetype.add_entity archetype 0
+    [ Component.make (module Foo.C) 1; Component.make (module Bar.C) 2 ];
+
+  assert (
+    Archetype.extract_entity archetype 0
+    |> List.map Component.id = [ Foo.C.id; Bar.C.id ])
+
 let () =
   test_hash ();
   test_edges ();
-  test_extract_entity ();
-  test_add_entity ()
+  test_add_entity ();
+  test_extract_entity ()

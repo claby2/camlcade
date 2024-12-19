@@ -32,7 +32,7 @@ let create () =
   (* Start with the empty archetype in the archetype index *)
   let archetype_index = Hashtbl.create 0 in
   let empty_archetype = Archetype.empty () in
-  Hashtbl.add archetype_index empty_archetype.hash empty_archetype;
+  Hashtbl.add archetype_index (Archetype.hash empty_archetype) empty_archetype;
   {
     empty_archetype;
     archetype_index;
@@ -68,23 +68,25 @@ let add_component w component entity =
     | None ->
         let new_archetype =
           Archetype.create
-            (Component.id component :: Archetype.components archetype)
+            (Archetype.components archetype
+            |> Id.ComponentSet.add (Component.id component))
         in
         Archetype.Edges.replace_add archetype_edges (Component.id component)
-          (Some new_archetype.hash);
+          (Some (Archetype.hash new_archetype));
         new_archetype
   in
   (* Move entity from old archetype to new archetype *)
   Archetype.add_entity new_archetype entity
     (Archetype.extract_entity archetype entity @ [ component ]);
-  Hashtbl.replace w.archetype_index new_archetype.hash new_archetype;
-  Hashtbl.replace w.entity_index entity new_archetype.hash;
-  new_archetype.components |> Id.ComponentSet.to_seq
+  Hashtbl.replace w.archetype_index (Archetype.hash new_archetype) new_archetype;
+  Hashtbl.replace w.entity_index entity (Archetype.hash new_archetype);
+  Archetype.components new_archetype
+  |> Id.ComponentSet.to_seq
   |> Seq.iter (fun c ->
          let new_archetype_set =
            match Hashtbl.find_opt w.component_index c with
-           | None -> ArchetypeHashSet.singleton new_archetype.hash
-           | Some set -> ArchetypeHashSet.add new_archetype.hash set
+           | None -> ArchetypeHashSet.singleton (Archetype.hash new_archetype)
+           | Some set -> ArchetypeHashSet.add (Archetype.hash new_archetype) set
          in
          Hashtbl.replace w.component_index c new_archetype_set)
 
@@ -99,21 +101,21 @@ let remove_component w component_id entity =
         let new_archetype =
           Archetype.create
             (Archetype.components archetype
-            |> List.filter (fun c -> c <> component_id))
+            |> Id.ComponentSet.remove component_id)
         in
         Archetype.Edges.replace_remove archetype_edges component_id
-          (Some new_archetype.hash);
+          (Some (Archetype.hash new_archetype));
         new_archetype
   in
   Archetype.add_entity new_archetype entity
     (Archetype.extract_entity archetype entity
     |> List.filter (fun c -> Component.id c <> component_id));
-  Hashtbl.replace w.archetype_index new_archetype.hash new_archetype;
-  Hashtbl.replace w.entity_index entity new_archetype.hash;
+  Hashtbl.replace w.archetype_index (Archetype.hash new_archetype) new_archetype;
+  Hashtbl.replace w.entity_index entity (Archetype.hash new_archetype);
   let new_archetype_set =
     match Hashtbl.find_opt w.component_index component_id with
-    | None -> ArchetypeHashSet.singleton new_archetype.hash
-    | Some set -> ArchetypeHashSet.add new_archetype.hash set
+    | None -> ArchetypeHashSet.singleton (Archetype.hash new_archetype)
+    | Some set -> ArchetypeHashSet.add (Archetype.hash new_archetype) set
   in
   Hashtbl.replace w.component_index component_id new_archetype_set
 
@@ -130,7 +132,7 @@ let add_system w schedule query system =
 
 let evaluate_query w (query : Query.t) =
   let required_components =
-    query.terms
+    Query.terms query
     |> List.filter_map (function Query.Required c -> Some c | _ -> None)
   in
   let candidate_archetypes =
@@ -151,14 +153,17 @@ let evaluate_query w (query : Query.t) =
   candidate_archetypes |> ArchetypeHashSet.to_seq
   |> Seq.filter_map (fun hash ->
          let archetype = Hashtbl.find w.archetype_index hash in
-         if Query.Filter.matches query.filter archetype.components then
-           Some archetype
+         if
+           Query.Filter.matches (Query.filter query)
+             (Archetype.components archetype)
+         then Some archetype
          else None)
   |> Seq.map (fun archetype ->
-         archetype.entities |> Id.EntitySet.to_seq
+         Archetype.entities archetype
+         |> Id.EntitySet.to_seq
          |> Seq.map (fun e ->
                 ( e,
-                  query.terms
+                  Query.terms query
                   |> List.map (function
                        | Query.Required c ->
                            Archetype.get_component archetype c e |> Option.get

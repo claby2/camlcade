@@ -56,7 +56,7 @@ let test_systems () =
           let transform =
             value |> Component.extract |> Component.Transform.C.of_component
           in
-          Math.Vec3.set_x transform (transform.x +. 1.);
+          Math.Vec3.set_x transform (Math.Vec3.x transform +. 1.);
           aux rest
       | _ -> failwith "died"
     in

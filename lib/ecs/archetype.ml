@@ -67,7 +67,6 @@ let empty () =
   }
 
 let create components =
-  let components = Id.ComponentSet.of_list components in
   {
     hash = Hash.hash (components |> Id.ComponentSet.to_list);
     components;
@@ -77,13 +76,14 @@ let create components =
   }
 
 let hash a = a.hash
-let components a = a.components |> Id.ComponentSet.to_list
+let components a = a.components
 let edges a = a.edges
+let entities a = a.entities
 
 exception Entity_not_found
 
 (* Remove an entity from the archetype and return its components *)
-let extract_entity a e : Component.value list =
+let extract_entity a e =
   if not (Id.EntitySet.mem e a.entities) then raise Entity_not_found;
   let res =
     Id.ComponentSet.to_list a.components
@@ -101,7 +101,7 @@ let extract_entity a e : Component.value list =
 exception Invalid_components
 
 (* Add an entity to the archetype with the given components *)
-let add_entity a e (components : Component.value list) =
+let add_entity a e components =
   (* Convert components to a hash table from component id to component value *)
   let components =
     Hashtbl.of_seq

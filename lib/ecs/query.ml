@@ -25,14 +25,16 @@ type term = Required of Id.Component.t | Optional of Id.Component.t
 type t = { terms : term list; filter : Filter.t }
 
 let create ?(filter = Filter.Wildcard) terms = { terms; filter }
+let terms q = q.terms
+let filter q = q.filter
 
 module Result = struct
   type t = (Id.Entity.t * Component.value list) list
-
-  let empty = []
 end
 
-(* Queries one would want to express:
+(* SCRATCH:
+
+Queries one would want to express:
 
 [Transform.C.id, Health.C.id] -> [[t1, h1], [t2, h2], ...]
 - Query all components with both Transform and Health components
@@ -44,6 +46,4 @@ end
 [AnyOf [Transform.C.id, Health.C.id], Other.C.id] ->
     [[t1, h1, o1], [n, h2, o2], [t3, n, o3], ...]
 - Query all components that have one of Transform or Health (can be both) and Other
-
 *)
-

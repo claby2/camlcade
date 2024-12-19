@@ -1,4 +1,11 @@
-module Make () = struct
+module type S = sig
+  type t = int
+
+  val next : unit -> t
+  val compare : t -> t -> int
+end
+
+module Make () : S = struct
   type t = int
 
   let current = ref 0

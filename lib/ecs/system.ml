@@ -1,11 +1,10 @@
 type schedule = Startup | Update
-type t = Query.Result.t -> unit
+type system = Query.Result.t -> unit
 
 module Registry = struct
-  type t' = (schedule, (Query.t * t) list) Hashtbl.t
-  type t = t'
+  type t = (schedule, (Query.t * system) list) Hashtbl.t
 
-  let create : t = Hashtbl.create 0
+  let create = Hashtbl.create 0
 
   let register r schedule query f =
     let current = Hashtbl.find_opt r schedule in
