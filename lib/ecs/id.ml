@@ -13,3 +13,4 @@ end
 module Component = Make ()
 module Entity = Make ()
 module ComponentSet = Set.Make (Component)
+module EntitySet = Set.Make (Entity)

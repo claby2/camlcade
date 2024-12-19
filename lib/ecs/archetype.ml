@@ -40,6 +40,7 @@ end
 type t = {
   hash : Hash.t;
   components : Id.ComponentSet.t;
+  mutable entities : Id.EntitySet.t;
   (* TODO: Use SparseSet *)
   table : (Id.Component.t, (Id.Entity.t, Component.value) Hashtbl.t) Hashtbl.t;
   (* edges[component] = (option<add>, option<remove>) *)
@@ -50,6 +51,7 @@ let empty =
   {
     hash = Hashtbl.hash [];
     components = Id.ComponentSet.empty;
+    entities = Id.EntitySet.empty;
     table = Hashtbl.create 0;
     edges = Edges.empty;
   }
@@ -59,6 +61,7 @@ let create components =
   {
     hash = Hash.hash (components |> Id.ComponentSet.to_list);
     components;
+    entities = Id.EntitySet.empty;
     table = Hashtbl.create 0;
     edges = Edges.empty;
   }
@@ -69,6 +72,7 @@ let edges a = a.edges
 
 (* Remove an entity from the archetype and return its components *)
 let extract_entity a e : Component.value list =
+  a.entities <- Id.EntitySet.remove e a.entities;
   Hashtbl.fold
     (fun _ table acc ->
       match Hashtbl.find_opt table e with
@@ -78,6 +82,7 @@ let extract_entity a e : Component.value list =
 
 (* Add an entity to the archetype with the given components *)
 let add_entity a e (components : Component.value list) =
+  a.entities <- Id.EntitySet.add e a.entities;
   components
   |> List.iter (fun c ->
          let id = Component.id c in
@@ -89,6 +94,55 @@ let add_entity a e (components : Component.value list) =
              let table = Hashtbl.create 0 in
              Hashtbl.add table e c;
              Hashtbl.add a.table id table)
+
+let get_from_query a (query : Query.t) =
+  if not (Query.Filter.matches query.filter a.components) then []
+  else
+    let exception Invalid_query in
+    try
+      (* entity -> component list *)
+      let result = Hashtbl.create 0 in
+      a.entities |> Id.EntitySet.iter (fun e -> Hashtbl.add result e []);
+      query.terms
+      |> List.rev
+         (* Respond to the terms in reverse order since components are added in reverse *)
+      |> List.iter (function
+           | Query.Required c -> (
+               match Hashtbl.find_opt a.table c with
+               | Some table ->
+                   (* This required component is present in the archetype, so we add it *)
+                   Hashtbl.iter
+                     (fun e c ->
+                       let cs = Hashtbl.find_opt result e in
+                       let cs = Option.value cs ~default:[] in
+                       Hashtbl.replace result e (c :: cs))
+                     table
+               | None ->
+                   (* This required component is not present in the archetype, so we short-circuit *)
+                   raise Invalid_query)
+           | Query.Optional c -> (
+               match Hashtbl.find_opt a.table c with
+               | Some table ->
+                   (* This optional component is present in the archetype, so we add it *)
+                   Hashtbl.iter
+                     (fun e c ->
+                       let cs = Hashtbl.find_opt result e in
+                       let cs = Option.value cs ~default:[] in
+                       Hashtbl.replace result e (c :: cs))
+                     table
+               | None ->
+                   (* This optional component is not present in the archetype,
+                      so we add a None component *)
+                   a.entities
+                   |> Id.EntitySet.iter (fun e ->
+                          let cs = Hashtbl.find_opt result e in
+                          let cs = Option.value cs ~default:[] in
+                          Hashtbl.replace result e
+                            (Component.make (module Component.None.C) () :: cs))
+               )
+           | Query.AnyOf _cs -> failwith "unimplemented");
+      Hashtbl.fold (fun e cs acc -> (e, cs) :: acc) result []
+    with Invalid_query -> []
 
 let get_component a c e =
   match Hashtbl.find_opt a.table c with

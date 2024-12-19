@@ -30,9 +30,20 @@ module Transform = struct
   module C = Make (T)
 end
 
+(* TODO: Should probably get rid of this Health component *)
 module Health = struct
   module T = struct
     type t = int
+  end
+
+  module C = Make (T)
+end
+
+(* A component that doesn't have any data.
+   Mainly used for optional components in a query result *)
+module None = struct
+  module T = struct
+    type t = unit
   end
 
   module C = Make (T)
