@@ -16,5 +16,3 @@ module Registry = struct
     let systems = Hashtbl.find_opt r schedule in
     Option.value systems ~default:[]
 end
-
-let run _s = failwith "unimplemented"

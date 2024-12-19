@@ -11,13 +11,12 @@ end
 let update_transforms (result : Query.Result.t) =
   let rec aux = function
     | [] -> ()
-    | (entity, [ value ]) :: rest ->
+    | (_, [ value ]) :: rest ->
         let transform =
           value |> Component.extract |> Component.Transform.C.of_component
         in
-        Printf.printf "Updating entity %d with transform %s\n" entity
-          (Math.Vec3.to_string transform);
         (* TODO: Update transform *)
+        Math.Vec3.set_x transform (transform.x +. 1.);
         aux rest
     | _ -> failwith "died"
   in
@@ -35,9 +34,6 @@ let () =
   assert (
     Option.get component |> Component.extract
     |> Component.Transform.C.of_component = Math.Vec3.zero);
-  World.remove_component world Component.Transform.C.id player;
-  let component = World.get_component world Component.Transform.C.id player in
-  assert (component = None);
   World.add_component world (Component.make (module Switch.C) false) player;
   World.add_component world (Component.make (module Switch.C) true) player;
   let component = World.get_component world Switch.C.id player in
@@ -50,4 +46,9 @@ let () =
     (Query.create [ Query.Required Component.Transform.C.id ])
     update_transforms;
   World.run_systems world System.Update;
+  World.run_systems world System.Update;
+  assert (
+    World.get_component world Component.Transform.C.id player
+    |> Option.get |> Component.extract |> Component.Transform.C.of_component
+    = Math.Vec3.make 2. 0. 0.);
   ()

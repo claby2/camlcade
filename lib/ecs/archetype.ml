@@ -47,6 +47,16 @@ type t = {
   edges : (Id.Component.t, Hash.t) Edges.t;
 }
 
+let to_string a =
+  Printf.sprintf "{ hash = %d; table = %s; }" a.hash
+    (Hashtbl.fold
+       (fun k v acc ->
+         Printf.sprintf "%s%d -> %s\n" acc k
+           (Hashtbl.fold
+              (fun k _v acc -> Printf.sprintf "%s%d -> _\n" acc k)
+              v ""))
+       a.table "")
+
 let empty =
   {
     hash = Hashtbl.hash [];
@@ -76,7 +86,9 @@ let extract_entity a e : Component.value list =
   Hashtbl.fold
     (fun _ table acc ->
       match Hashtbl.find_opt table e with
-      | Some c -> c :: acc
+      | Some c ->
+          Hashtbl.remove table e;
+          c :: acc
       | None -> failwith "Entity not found, is this a bug?")
     a.table []
 
