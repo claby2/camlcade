@@ -18,7 +18,5 @@ type term = Required of Id.Component.t | Optional of Id.Component.t
 type t
 
 val create : ?filter:Filter.t -> term list -> t
-val terms : t -> term list
 val required_components : t -> Id.Component.t list
-val filter : t -> Filter.t
 val evaluate : t -> Archetype.t list -> Result.t

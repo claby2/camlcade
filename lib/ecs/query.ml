@@ -29,23 +29,20 @@ type term = Required of Id.Component.t | Optional of Id.Component.t
 type t = { terms : term list; filter : Filter.t }
 
 let create ?(filter = Filter.Wildcard) terms = { terms; filter }
-let terms q = q.terms
 
 let required_components q =
   q.terms |> List.filter_map (function Required c -> Some c | _ -> None)
 
-let filter q = q.filter
-
 let evaluate q archetypes =
   archetypes
   (* Only consider archetypes that match the filter *)
-  |> List.filter (fun a -> Filter.matches (filter q) (Archetype.components a))
+  |> List.filter (fun a -> Filter.matches q.filter (Archetype.components a))
   |> List.map (fun a ->
          let entities = Archetype.entities a |> Id.EntitySet.to_list in
          entities
          |> List.map (fun e ->
                 let response_components =
-                  terms q
+                  q.terms
                   |> List.map (function
                        | Required c ->
                            Archetype.get_component a c e |> Option.get
