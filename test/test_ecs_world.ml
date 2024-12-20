@@ -8,6 +8,14 @@ module Foo = struct
   module C = Component.Make (T)
 end
 
+module Bar = struct
+  module T = struct
+    type t = int
+  end
+
+  module C = Component.Make (T)
+end
+
 module Switch = struct
   module T = struct
     type t = bool ref
@@ -46,9 +54,43 @@ let test_entity_lifecycle () =
      |> Option.get |> Component.unpack |> Switch.C.of_base)
     = true);
 
+  World.remove_component world Switch.C.id e2;
+  assert (World.get_component world Switch.C.id e2 = None);
+
   World.remove_entity world e1;
   assert (World.get_component world Foo.C.id e1 = None);
   assert (World.get_component world Switch.C.id e1 = None)
+
+let test_diabolical_archetype_graph () =
+  let world = World.create () in
+  (* e1 creates archetype graph [] -> [Foo] -> [Foo, Bar] -> [Foo, Bar, Switch] *)
+  let e1 =
+    World.add_entity world
+    |> World.with_component world (Component.pack (module Foo.C) 0)
+    |> World.with_component world (Component.pack (module Bar.C) 1)
+    |> World.with_component world (Component.pack (module Switch.C) (ref false))
+  in
+  (* e2 creates archetype graph [] -> [Bar] -> [Bar, Switch] *)
+  let e2 =
+    World.add_entity world
+    |> World.with_component world (Component.pack (module Bar.C) 2)
+    |> World.with_component world (Component.pack (module Switch.C) (ref true))
+  in
+
+  (* When Foo is removed, the world will attempt to traverse the archetype graph
+     from [Foo, Bar, Switch] to [Bar, Switch], but this remove edge does not exist yet.
+     However, the [Bar, Switch] archetype already exists after e2 was added.
+     So, this test ensures that the same archetype is reused. *)
+  World.remove_component world Foo.C.id e1;
+  (* e1 should now have components [Bar, Switch] *)
+  assert (World.get_component world Foo.C.id e1 = None);
+  assert (World.get_component world Bar.C.id e1 |> Option.is_some);
+  assert (World.get_component world Switch.C.id e1 |> Option.is_some);
+
+  (* e2 should still have components [Bar, Switch], if not, it probably means that
+     the previous remove_component call inadvertently replaced the [Bar, Switch] archetype *)
+  assert (World.get_component world Bar.C.id e2 |> Option.is_some);
+  assert (World.get_component world Switch.C.id e2 |> Option.is_some)
 
 let test_evaluate_query () =
   let world = World.create () in
@@ -185,5 +227,6 @@ let test_systems () =
 
 let () =
   test_entity_lifecycle ();
+  test_diabolical_archetype_graph ();
   test_evaluate_query ();
   test_systems ()
