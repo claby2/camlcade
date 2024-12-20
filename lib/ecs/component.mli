@@ -5,6 +5,7 @@ module type S = sig
 
   val id : Id.Component.t
   val of_base : base -> t
+  val of_base_opt : base -> t option
   val to_base : t -> base
 end
 

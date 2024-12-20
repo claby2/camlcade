@@ -99,8 +99,24 @@ let test_systems () =
     |> World.with_component world (Component.pack (module Switch.C) (ref false))
     |> World.with_component world (Component.pack (module Foo.C) 0)
   in
+  let assert_enemies enemies f =
+    enemies
+    |> List.iter (fun e ->
+           let switch =
+             World.get_component world Switch.C.id e
+             |> Option.get |> Component.unpack |> Switch.C.of_base
+           in
+           let transform =
+             World.get_component world Component.Transform.C.id e
+             |> Option.get |> Component.unpack |> Component.Transform.C.of_base
+           in
+           f e switch transform)
+  in
+
+  (* Spawn 10 enemies *)
   let enemies = List.init 10 (fun _ -> spawn_enemy world) in
 
+  (* Define a system and add it to the world *)
   let update_enemies (result : Query.Result.t) =
     result
     |> List.iter (function
@@ -122,34 +138,50 @@ let test_systems () =
     update_enemies;
 
   (* Ensure all enemies Switch and Transform components are unchanged *)
-  enemies
-  |> List.iter (fun e ->
-         let switch =
-           World.get_component world Switch.C.id e
-           |> Option.get |> Component.unpack |> Switch.C.of_base
-         in
-         let transform =
-           World.get_component world Component.Transform.C.id e
-           |> Option.get |> Component.unpack |> Component.Transform.C.of_base
-         in
-         assert (!switch = false);
-         assert (transform = Math.Vec3.zero));
+  assert_enemies enemies (fun _ switch transform ->
+      assert (!switch = false);
+      assert (transform = Math.Vec3.zero));
 
   World.run_systems world System.Update;
 
   (* Ensure all enemies Switch component is now true and Transform component is updated *)
-  enemies
-  |> List.iter (fun e ->
-         let switch =
-           World.get_component world Switch.C.id e
-           |> Option.get |> Component.unpack |> Switch.C.of_base
-         in
-         let transform =
-           World.get_component world Component.Transform.C.id e
-           |> Option.get |> Component.unpack |> Component.Transform.C.of_base
-         in
-         assert (!switch = true);
-         assert (transform = Math.Vec3.make (float_of_int e) 0. 0.))
+  assert_enemies enemies (fun e switch transform ->
+      assert (!switch = true);
+      assert (Math.Vec3.x transform = float_of_int e));
+
+  (* Add an entity without a transform component *)
+  World.add_entity world
+  |> World.with_component world (Component.pack (module Switch.C) (ref false))
+  |> ignore;
+
+  (* Indicates whether we encountered a None component in place of a Transform component.
+     This should be true after running the system since the query should match with the entity
+     that was added above, but it does not have a Transform component *)
+  let encountered_none = ref false in
+
+  let toggle_optional_switches (result : Query.Result.t) =
+    result
+    |> List.iter (function
+         | e, [ _; transform ] -> (
+             match
+               Component.unpack transform |> Component.Transform.C.of_base_opt
+             with
+             | Some transform -> Math.Vec3.set_z transform (float_of_int e)
+             | _ -> encountered_none := true)
+         | _ -> assert false)
+  in
+  (* Query for entities with an optional Switch and optional Transform component *)
+  World.add_system world System.Update
+    (Query.create
+       [ Query.Optional Switch.C.id; Query.Optional Component.Transform.C.id ])
+    toggle_optional_switches;
+
+  World.run_systems world System.Update;
+
+  assert_enemies enemies (fun e _ transform ->
+      assert (Math.Vec3.z transform = float_of_int e));
+  (* Ensure that the system encountered a None component *)
+  assert !encountered_none
 
 let () =
   test_entity_lifecycle ();

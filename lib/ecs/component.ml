@@ -7,6 +7,7 @@ module type S = sig
 
   val id : Id.Component.t
   val of_base : base -> t
+  val of_base_opt : base -> t option
   val to_base : t -> base
 end
 
@@ -19,6 +20,7 @@ end) : S with type t = B.t = struct
 
   let id = Id.Component.next ()
   let of_base = function T t -> t | _ -> failwith "Invalid component"
+  let of_base_opt = function T t -> Some t | _ -> None
   let to_base t = T t
 end
 

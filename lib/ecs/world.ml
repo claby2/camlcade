@@ -138,49 +138,30 @@ let add_system w schedule query system =
   System.Registry.register w.systems schedule query system
 
 let evaluate_query w (query : Query.t) =
-  let required_components =
-    Query.terms query
-    |> List.filter_map (function Query.Required c -> Some c | _ -> None)
-  in
+  let required_components = Query.required_components query in
   let candidate_archetypes =
-    required_components
-    |> List.fold_left
-         (fun acc c ->
-           let set =
-             Hashtbl.find_opt w.component_index c
-             (* TODO: Could potentially short-circuit here if we find an empty set? *)
-             |> Option.value ~default:ArchetypeHashSet.empty
-           in
-           match acc with
-           | Some acc -> Some (ArchetypeHashSet.inter acc set)
-           | None -> Some set)
-         None
-    |> Option.value ~default:ArchetypeHashSet.empty
+    if List.is_empty required_components then
+      (* There are no required components, so the candidate archetypes is the set of all archetypes *)
+      Hashtbl.to_seq_values w.archetype_index |> List.of_seq
+    else
+      (* There are required components, so the candidate archetypes is the intersection of the sets
+               of archetypes that contain each required component *)
+      required_components
+      |> List.fold_left
+           (fun acc c ->
+             let set =
+               Hashtbl.find_opt w.component_index c
+               |> Option.value ~default:ArchetypeHashSet.empty
+             in
+             match acc with
+             | Some acc -> Some (ArchetypeHashSet.inter acc set)
+             | None -> Some set)
+           None
+      |> Option.value ~default:ArchetypeHashSet.empty
+      |> ArchetypeHashSet.to_list
+      |> List.map (fun hash -> Hashtbl.find w.archetype_index hash)
   in
-  candidate_archetypes |> ArchetypeHashSet.to_seq
-  |> Seq.filter_map (fun hash ->
-         let archetype = Hashtbl.find w.archetype_index hash in
-         if
-           Query.Filter.matches (Query.filter query)
-             (Archetype.components archetype)
-         then Some archetype
-         else None)
-  |> Seq.map (fun archetype ->
-         Archetype.entities archetype
-         |> Id.EntitySet.to_seq
-         |> Seq.map (fun e ->
-                ( e,
-                  Query.terms query
-                  |> List.map (function
-                       | Query.Required c ->
-                           Archetype.get_component archetype c e |> Option.get
-                       | Query.Optional c ->
-                           Archetype.get_component archetype c e
-                           |> Option.value
-                                ~default:
-                                  (Component.pack (module Component.None.C) ()))
-                )))
-  |> Seq.concat |> List.of_seq
+  Query.evaluate query candidate_archetypes
 
 let run_systems w schedule =
   System.Registry.fetch w.systems schedule
