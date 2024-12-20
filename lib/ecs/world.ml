@@ -42,7 +42,8 @@ let create () =
   }
 
 let get_archetype w entity =
-  Hashtbl.find w.archetype_index (Hashtbl.find w.entity_index entity)
+  try Hashtbl.find w.archetype_index (Hashtbl.find w.entity_index entity)
+  with Not_found -> raise Archetype.Entity_not_found
 
 (* Add a new entity and return its id *)
 let add_entity w =
@@ -51,10 +52,13 @@ let add_entity w =
   Archetype.add_entity w.empty_archetype entity [];
   entity
 
-(* Get the value of a specific component for a given entity if it exists *)
-let get_component w component entity =
+(* Remove an entity from the world *)
+let remove_entity w entity =
   let archetype = get_archetype w entity in
-  Archetype.get_component archetype component entity
+  Archetype.extract_entity archetype entity |> ignore;
+  Hashtbl.remove w.entity_index entity
+(* TODO: Should we remove the archetype if it's empty? i.e. should it be
+   removed from the archetype index and/or its hash be removed from component index? *)
 
 (* Add a component to an entity *)
 let add_component w component entity =
@@ -90,6 +94,10 @@ let add_component w component entity =
          in
          Hashtbl.replace w.component_index c new_archetype_set)
 
+let with_component w component entity =
+  add_component w component entity;
+  entity
+
 (* Remove a component from an entity *)
 let remove_component w component_id entity =
   let archetype = get_archetype w entity in
@@ -119,13 +127,12 @@ let remove_component w component_id entity =
   in
   Hashtbl.replace w.component_index component_id new_archetype_set
 
-(* Remove an entity from the world *)
-let remove_entity w entity =
-  let archetype = get_archetype w entity in
-  Archetype.extract_entity archetype entity |> ignore;
-  Hashtbl.remove w.entity_index entity
-(* TODO: Should we remove the archetype if it's empty? i.e. should it be
-   removed from the archetype index and/or its hash be removed from component index? *)
+(* Get the value of a specific component for a given entity if it exists *)
+let get_component w component entity =
+  try
+    let archetype = get_archetype w entity in
+    Archetype.get_component archetype component entity
+  with Archetype.Entity_not_found -> None
 
 let add_system w schedule query system =
   System.Registry.register w.systems schedule query system
