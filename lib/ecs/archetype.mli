@@ -5,6 +5,8 @@ module Hash : sig
   val compare : t -> t -> int
 end
 
+(**/**)
+
 module Edges : sig
   type ('a, 'b) t
 
@@ -14,6 +16,8 @@ module Edges : sig
   val replace_add : ('a, 'b) t -> 'a -> 'b option -> unit
   val replace_remove : ('a, 'b) t -> 'a -> 'b option -> unit
 end
+
+(**/**)
 
 type t
 
@@ -26,8 +30,9 @@ val to_string : t -> string
 val empty : unit -> t
 val create : Id.ComponentSet.t -> t
 val hash : t -> Hash.t
+val hash_with_component : t -> Id.Component.t -> Hash.t
+val hash_without_component : t -> Id.Component.t -> Hash.t
 val components : t -> Id.ComponentSet.t
-val edges : t -> (Id.Component.t, Hash.t) Edges.t
 val entities : t -> Id.EntitySet.t
 val extract_entity : t -> Id.Entity.t -> Component.packed list
 val add_entity : t -> Id.Entity.t -> Component.packed list -> unit

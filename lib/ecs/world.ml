@@ -60,28 +60,27 @@ let remove_entity w entity =
 (* TODO: Should we remove the archetype if it's empty? i.e. should it be
    removed from the archetype index and/or its hash be removed from component index? *)
 
+let create_archetype_with_components w components =
+  let new_archetype = Archetype.create components in
+  if Hashtbl.mem w.archetype_index (Archetype.hash new_archetype) then
+    Hashtbl.find w.archetype_index (Archetype.hash new_archetype)
+  else (
+    Hashtbl.add w.archetype_index (Archetype.hash new_archetype) new_archetype;
+    new_archetype)
+
 (* Add a component to an entity *)
 let add_component w component entity =
   let archetype = get_archetype w entity in
-  let archetype_edges = Archetype.edges archetype in
-  let new_components =
-    Archetype.components archetype
-    |> Id.ComponentSet.add (Component.id component)
-  in
   let new_archetype_hash =
-    match
-      Archetype.Edges.find_add_opt archetype_edges (Component.id component)
-    with
-    | Some hash -> hash
-    | None -> Archetype.Hash.hash (new_components |> Id.ComponentSet.to_list)
+    Archetype.hash_with_component archetype (Component.id component)
   in
   let new_archetype =
     match Hashtbl.find_opt w.archetype_index new_archetype_hash with
     | Some a -> a
     | None ->
-        let a = Archetype.create new_components in
-        Hashtbl.add w.archetype_index new_archetype_hash a;
-        a
+        create_archetype_with_components w
+          (Archetype.components archetype
+          |> Id.ComponentSet.add (Component.id component))
   in
   (* Move entity from old archetype to new archetype *)
   Archetype.add_entity new_archetype entity
@@ -89,8 +88,7 @@ let add_component w component entity =
   Hashtbl.replace w.archetype_index (Archetype.hash new_archetype) new_archetype;
   Hashtbl.replace w.entity_index entity (Archetype.hash new_archetype);
   Archetype.components new_archetype
-  |> Id.ComponentSet.to_seq
-  |> Seq.iter (fun c ->
+  |> Id.ComponentSet.iter (fun c ->
          let new_archetype_set =
            match Hashtbl.find_opt w.component_index c with
            | None -> ArchetypeHashSet.singleton (Archetype.hash new_archetype)
@@ -105,22 +103,15 @@ let with_component w component entity =
 (* Remove a component from an entity *)
 let remove_component w component_id entity =
   let archetype = get_archetype w entity in
-  let archetype_edges = Archetype.edges archetype in
-  let new_components =
-    Archetype.components archetype |> Id.ComponentSet.remove component_id
-  in
   let new_archetype_hash =
-    match Archetype.Edges.find_remove_opt archetype_edges component_id with
-    | Some hash -> hash
-    | None -> Archetype.Hash.hash (new_components |> Id.ComponentSet.to_list)
+    Archetype.hash_without_component archetype component_id
   in
   let new_archetype =
     match Hashtbl.find_opt w.archetype_index new_archetype_hash with
     | Some a -> a
     | None ->
-        let a = Archetype.create new_components in
-        Hashtbl.add w.archetype_index new_archetype_hash a;
-        a
+        create_archetype_with_components w
+          (Archetype.components archetype |> Id.ComponentSet.remove component_id)
   in
   Archetype.add_entity new_archetype entity
     (Archetype.extract_entity archetype entity

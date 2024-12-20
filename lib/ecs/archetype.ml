@@ -82,8 +82,34 @@ let create components =
   }
 
 let hash a = a.hash
+
+let hash_with_component a c =
+  if Id.ComponentSet.mem c a.components then a.hash
+  else
+    match Edges.find_add_opt a.edges c with
+    | Some hash -> hash
+    | None ->
+        let new_components =
+          Id.ComponentSet.add c a.components |> Id.ComponentSet.to_list
+        in
+        let hash = Hash.hash new_components in
+        Edges.replace_add a.edges c (Some hash);
+        hash
+
+let hash_without_component a c =
+  if not (Id.ComponentSet.mem c a.components) then a.hash
+  else
+    match Edges.find_remove_opt a.edges c with
+    | Some hash -> hash
+    | None ->
+        let new_components =
+          Id.ComponentSet.remove c a.components |> Id.ComponentSet.to_list
+        in
+        let hash = Hash.hash new_components in
+        Edges.replace_remove a.edges c (Some hash);
+        hash
+
 let components a = a.components
-let edges a = a.edges
 let entities a = a.entities
 
 exception Entity_not_found
