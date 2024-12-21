@@ -115,8 +115,8 @@ let get_component w component entity =
     Archetype.get_component archetype component entity
   with Archetype.Entity_not_found -> None
 
-let add_system w schedule query system =
-  System.Registry.register w.systems schedule query system
+let add_system w schedule queries system =
+  System.Registry.register w.systems schedule queries system
 
 let evaluate_query w (query : Query.t) =
   let required_components = Query.required_components query in
@@ -146,6 +146,6 @@ let evaluate_query w (query : Query.t) =
 
 let run_systems w schedule =
   System.Registry.fetch w.systems schedule
-  |> List.iter (fun (query, system) ->
-         let result = evaluate_query w query in
+  |> List.iter (fun (queries, system) ->
+         let result = queries |> Array.map (evaluate_query w) in
          system result)

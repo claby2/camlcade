@@ -159,8 +159,8 @@ let test_systems () =
   let enemies = List.init 10 (fun _ -> spawn_enemy world) in
 
   (* Define a system and add it to the world *)
-  let update_enemies (result : Query.Result.t) =
-    result
+  let update_enemies (result : Query.Result.t array) =
+    result.(0)
     |> List.iter (function
          | e, [ switch; transform ] ->
              let switch = switch |> Component.unpack |> Switch.C.of_base in
@@ -174,9 +174,11 @@ let test_systems () =
          | _ -> assert false)
   in
   World.add_system world System.Update
-    (Query.create
-       [ Query.Required Switch.C.id; Query.Required Component.Transform.C.id ]
-       ~filter:(Query.Filter.With Foo.C.id))
+    [|
+      Query.create
+        [ Query.Required Switch.C.id; Query.Required Component.Transform.C.id ]
+        ~filter:(Query.Filter.With Foo.C.id);
+    |]
     update_enemies;
 
   (* Ensure all enemies Switch and Transform components are unchanged *)
@@ -201,8 +203,8 @@ let test_systems () =
      that was added above, but it does not have a Transform component *)
   let encountered_none = ref false in
 
-  let toggle_optional_switches (result : Query.Result.t) =
-    result
+  let toggle_optional_switches (result : Query.Result.t array) =
+    result.(0)
     |> List.iter (function
          | e, [ _; transform ] -> (
              match
@@ -214,8 +216,10 @@ let test_systems () =
   in
   (* Query for entities with an optional Switch and optional Transform component *)
   World.add_system world System.Update
-    (Query.create
-       [ Query.Optional Switch.C.id; Query.Optional Component.Transform.C.id ])
+    [|
+      Query.create
+        [ Query.Optional Switch.C.id; Query.Optional Component.Transform.C.id ];
+    |]
     toggle_optional_switches;
 
   World.run_systems world System.Update;
@@ -225,8 +229,59 @@ let test_systems () =
   (* Ensure that the system encountered a None component *)
   assert !encountered_none
 
+let test_multiple_query_systems () =
+  let world = World.create () in
+  let foo_bars =
+    List.init 11 (fun i ->
+        World.add_entity world
+        |> World.with_component world (Component.pack (module Foo.C) i)
+        |> World.with_component world (Component.pack (module Bar.C) i))
+  in
+  let switches =
+    List.init 6 (fun i ->
+        World.add_entity world
+        |> World.with_component world (Component.pack (module Foo.C) i)
+        |> World.with_component world
+             (Component.pack (module Switch.C) (ref false)))
+  in
+  let foo_bars_count = ref 0 in
+  let switches_count = ref 0 in
+  let update (result : Query.Result.t array) =
+    match result with
+    | [| foo_bars; switches |] ->
+        (* Update foo_bars *)
+        foo_bars
+        |> List.iter (function
+             | _, [ foo; bar ] ->
+                 foo |> Component.unpack |> Foo.C.of_base |> ignore;
+                 bar |> Component.unpack |> Bar.C.of_base |> ignore;
+                 foo_bars_count := !foo_bars_count + 1
+             | _ -> assert false);
+        (* Update switches *)
+        switches
+        |> List.iter (function
+             | _, [ switch ] ->
+                 switch |> Component.unpack |> Switch.C.of_base |> ignore;
+                 switches_count := !switches_count + 1
+             | _ -> assert false)
+    | _ -> assert false
+  in
+
+  World.add_system world System.Update
+    [|
+      Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
+      Query.create [ Query.Required Switch.C.id ];
+    |]
+    update;
+
+  World.run_systems world System.Update;
+
+  assert (!foo_bars_count = List.length foo_bars);
+  assert (!switches_count = List.length switches)
+
 let () =
   test_entity_lifecycle ();
   test_diabolical_archetype_graph ();
   test_evaluate_query ();
-  test_systems ()
+  test_systems ();
+  test_multiple_query_systems ()

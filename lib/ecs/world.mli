@@ -10,7 +10,7 @@ val remove_component : t -> Id.Component.t -> Id.Entity.t -> unit
 val get_component :
   t -> Id.Component.t -> Id.Entity.t -> Component.packed option
 
-val add_system : t -> System.schedule -> Query.t -> System.system -> unit
+val add_system : t -> System.schedule -> Query.t array -> System.system -> unit
 val run_systems : t -> System.schedule -> unit
 
 (**/**)
