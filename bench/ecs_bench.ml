@@ -56,17 +56,17 @@ let t3 =
 
 let t4 =
   Bench.Test.create ~name:"register and fetch systems" (fun () ->
-      let registry = System.Registry.create () in
+      let registry = Scheduler.create () in
       for _ = 1 to 100 do
         let system results = ignore results in
-        System.Registry.register registry System.Update
-          [|
-            Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
-            Query.create [ Query.Required Foo.C.id ];
-          |]
-          system
+        Scheduler.register registry Scheduler.Update
+          ( [|
+              Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
+              Query.create [ Query.Required Foo.C.id ];
+            |],
+            system )
       done;
-      System.Registry.fetch registry System.Update |> ignore)
+      Scheduler.fetch registry Scheduler.Update |> ignore)
 
 let tests = [ t1; t2; t3; t4 ]
 let command = Bench.make_command tests

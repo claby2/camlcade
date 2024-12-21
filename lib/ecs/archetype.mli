@@ -33,6 +33,3 @@ val add_entity : t -> Id.Entity.t -> Component.packed list -> unit
 
 val get_component :
   t -> Id.Component.t -> Id.Entity.t -> Component.packed option
-
-exception Entity_not_found
-exception Invalid_components

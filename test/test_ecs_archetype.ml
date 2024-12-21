@@ -60,18 +60,18 @@ let test_add_entity () =
     try
       Archetype.add_entity archetype 3 [];
       false
-    with Archetype.Invalid_components -> true);
+    with Invalid_argument _ -> true);
   assert (
     try
       Archetype.add_entity archetype 3 [ Component.pack (module Foo.C) 5 ];
       false
-    with Archetype.Invalid_components -> true);
+    with Invalid_argument _ -> true);
   assert (
     try
       Archetype.add_entity archetype 3
         [ Component.pack (module Bar.C) 6; Component.pack (module Bar.C) 7 ];
       false
-    with Archetype.Invalid_components -> true);
+    with Invalid_argument _ -> true);
 
   (* Add an entity with duplicate components, should still work *)
   Archetype.add_entity archetype 3
@@ -99,7 +99,7 @@ let test_extract_entity () =
     try
       Archetype.extract_entity archetype 0 |> ignore;
       false
-    with Archetype.Entity_not_found -> true);
+    with Not_found -> true);
 
   (* Add an entity to the archetype *)
   Archetype.add_entity archetype 0

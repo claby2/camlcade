@@ -103,11 +103,9 @@ let hash_without_component a c =
 let components a = a.components
 let entities a = a.entities
 
-exception Entity_not_found
-
 (* Remove an entity from the archetype and return its components *)
 let extract_entity a e =
-  if not (Id.EntitySet.mem e a.entities) then raise Entity_not_found;
+  if not (Id.EntitySet.mem e a.entities) then raise Not_found;
 
   (* Gather all components for the entity before mutating the archetype *)
   let components = Id.ComponentSet.to_list a.components in
@@ -131,8 +129,6 @@ let extract_entity a e =
   (* Return the packed components *)
   extracted |> List.map snd
 
-exception Invalid_components
-
 (* Add an entity to the archetype with the given components *)
 let add_entity a e components =
   (* Convert components to a hash table from component id to component value *)
@@ -144,10 +140,12 @@ let add_entity a e components =
   (* Check that the given components match the archetype's components *)
   let expected_count = Id.ComponentSet.cardinal a.components in
   let actual_count = Hashtbl.length components in
-  if expected_count <> actual_count then raise Invalid_components;
+  if expected_count <> actual_count then
+    invalid_arg "number of components do not match";
   Id.ComponentSet.iter
     (fun cid ->
-      if not (Hashtbl.mem components cid) then raise Invalid_components)
+      if not (Hashtbl.mem components cid) then
+        invalid_arg "found invalid component")
     a.components;
 
   (* Add the components to the archetype *)

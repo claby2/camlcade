@@ -7,7 +7,7 @@ type t = {
   entity_index : (Id.Entity.t, Archetype.Hash.t) Hashtbl.t;
   (* TODO: component id -> (archetype id -> column) *)
   component_index : (Id.Component.t, ArchetypeHashSet.t) Hashtbl.t;
-  systems : System.Registry.t;
+  scheduler : (Query.t array * t System.t) Scheduler.t;
 }
 
 (* Create a new empty world *)
@@ -21,12 +21,11 @@ let create () =
     archetype_index;
     entity_index = Hashtbl.create 0;
     component_index = Hashtbl.create 0;
-    systems = System.Registry.create ();
+    scheduler = Scheduler.create ();
   }
 
 let get_archetype w entity =
-  try Hashtbl.find w.archetype_index (Hashtbl.find w.entity_index entity)
-  with Not_found -> raise Archetype.Entity_not_found
+  Hashtbl.find w.archetype_index (Hashtbl.find w.entity_index entity)
 
 (* Add a new entity and return its id *)
 let add_entity w =
@@ -113,39 +112,43 @@ let get_component w component entity =
   try
     let archetype = get_archetype w entity in
     Archetype.get_component archetype component entity
-  with Archetype.Entity_not_found -> None
+  with Not_found -> None
 
 let add_system w schedule queries system =
-  System.Registry.register w.systems schedule queries system
+  Scheduler.register w.scheduler schedule (queries, system)
 
 let evaluate_query w (query : Query.t) =
   let required_components = Query.required_components query in
+  let intersection_opt acc c =
+    let set =
+      match Hashtbl.find_opt w.component_index c with
+      | Some set -> set
+      | None -> ArchetypeHashSet.empty
+    in
+    match acc with
+    | Some acc -> Some (ArchetypeHashSet.inter acc set)
+    | None -> Some set
+  in
   let candidate_archetypes =
     if List.is_empty required_components then
       (* There are no required components, so the candidate archetypes is the set of all archetypes *)
       Hashtbl.to_seq_values w.archetype_index |> List.of_seq
     else
       (* There are required components, so the candidate archetypes is the intersection of the sets
-               of archetypes that contain each required component *)
+         of archetypes that contain each required component *)
       required_components
-      |> List.fold_left
-           (fun acc c ->
-             let set =
-               Hashtbl.find_opt w.component_index c
-               |> Option.value ~default:ArchetypeHashSet.empty
-             in
-             match acc with
-             | Some acc -> Some (ArchetypeHashSet.inter acc set)
-             | None -> Some set)
-           None
+      |> List.fold_left intersection_opt None
       |> Option.value ~default:ArchetypeHashSet.empty
       |> ArchetypeHashSet.to_list
-      |> List.map (fun hash -> Hashtbl.find w.archetype_index hash)
+      |> List.map (Hashtbl.find w.archetype_index)
   in
   Query.evaluate query candidate_archetypes
 
 let run_systems w schedule =
-  System.Registry.fetch w.systems schedule
-  |> List.iter (fun (queries, system) ->
-         let result = queries |> Array.map (evaluate_query w) in
-         system result)
+  let run_system (queries, system) =
+    let result = queries |> Array.map (evaluate_query w) in
+    match system with
+    | System.Query system -> system result
+    | System.Immediate system -> system w result
+  in
+  Scheduler.fetch w.scheduler schedule |> List.iter run_system

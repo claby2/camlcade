@@ -173,20 +173,20 @@ let test_systems () =
              Math.Vec3.set_x transform (float_of_int e)
          | _ -> assert false)
   in
-  World.add_system world System.Update
+  World.add_system world Scheduler.Update
     [|
       Query.create
         [ Query.Required Switch.C.id; Query.Required Component.Transform.C.id ]
         ~filter:(Query.Filter.With Foo.C.id);
     |]
-    update_enemies;
+    (System.Query update_enemies);
 
   (* Ensure all enemies Switch and Transform components are unchanged *)
   assert_enemies enemies (fun _ switch transform ->
       assert (!switch = false);
       assert (transform = Math.Vec3.zero));
 
-  World.run_systems world System.Update;
+  World.run_systems world Scheduler.Update;
 
   (* Ensure all enemies Switch component is now true and Transform component is updated *)
   assert_enemies enemies (fun e switch transform ->
@@ -215,14 +215,14 @@ let test_systems () =
          | _ -> assert false)
   in
   (* Query for entities with an optional Switch and optional Transform component *)
-  World.add_system world System.Update
+  World.add_system world Scheduler.Update
     [|
       Query.create
         [ Query.Optional Switch.C.id; Query.Optional Component.Transform.C.id ];
     |]
-    toggle_optional_switches;
+    (System.Query toggle_optional_switches);
 
-  World.run_systems world System.Update;
+  World.run_systems world Scheduler.Update;
 
   assert_enemies enemies (fun e _ transform ->
       assert (Math.Vec3.z transform = float_of_int e));
@@ -267,14 +267,14 @@ let test_multiple_query_systems () =
     | _ -> assert false
   in
 
-  World.add_system world System.Update
+  World.add_system world Scheduler.Update
     [|
       Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
       Query.create [ Query.Required Switch.C.id ];
     |]
-    update;
+    (System.Query update);
 
-  World.run_systems world System.Update;
+  World.run_systems world Scheduler.Update;
 
   assert (!foo_bars_count = List.length foo_bars);
   assert (!switches_count = List.length switches)
@@ -303,14 +303,14 @@ let test_system_order () =
   let system2 = create_system 2. in
 
   (* Add system2 then system1 after, ideally, system2 should run first *)
-  World.add_system world System.Update
+  World.add_system world Scheduler.Update
     [| Query.create [ Query.Required Component.Transform.C.id ] |]
-    system2;
-  World.add_system world System.Update
+    (System.Query system2);
+  World.add_system world Scheduler.Update
     [| Query.create [ Query.Required Component.Transform.C.id ] |]
-    system1;
+    (System.Query system1);
 
-  World.run_systems world System.Update;
+  World.run_systems world Scheduler.Update;
 
   let transform =
     World.get_component world Component.Transform.C.id entity
