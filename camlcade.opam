@@ -14,6 +14,7 @@ depends: [
   "dune" {>= "3.16"}
   "tgls"
   "tsdl"
+  "core_bench"
   "odoc" {with-doc}
 ]
 build: [

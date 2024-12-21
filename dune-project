@@ -19,7 +19,7 @@
  (name camlcade)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune tgls tsdl)
+ (depends ocaml dune tgls tsdl core_bench)
  (tags
   (topics "to describe" your project)))
 
