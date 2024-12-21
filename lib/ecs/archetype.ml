@@ -46,29 +46,17 @@ type t = {
   components : Id.ComponentSet.t;
   mutable entities : Id.EntitySet.t;
   (* TODO: Use SparseSet *)
-  table : (Id.Component.t, (Id.Entity.t, Component.packed) Hashtbl.t) Hashtbl.t;
+  table : (Id.Entity.t, Component.packed) Hashtbl.t array;
   (* edges[component] = (option<add>, option<remove>) *)
   edges : (Id.Component.t, Hash.t) Edges.t;
 }
-
-let to_string a =
-  Printf.sprintf "{ hash = %d; entities = %s; table = %s; }" a.hash
-    (a.entities |> Id.EntitySet.to_seq
-    |> Seq.fold_left (fun acc e -> Printf.sprintf "%s%d, " acc e) "")
-    (Hashtbl.fold
-       (fun k v acc ->
-         Printf.sprintf "%s%d -> %s\n" acc k
-           (Hashtbl.fold
-              (fun k _v acc -> Printf.sprintf "%s%d -> _\n" acc k)
-              v ""))
-       a.table "")
 
 let empty () =
   {
     hash = Hashtbl.hash [];
     components = Id.ComponentSet.empty;
     entities = Id.EntitySet.empty;
-    table = Hashtbl.create 0;
+    table = Array.make 0 (Hashtbl.create 0);
     edges = Edges.empty ();
   }
 
@@ -77,7 +65,10 @@ let create components =
     hash = Hash.hash (components |> Id.ComponentSet.to_list);
     components;
     entities = Id.EntitySet.empty;
-    table = Hashtbl.create 0;
+    table =
+      Array.init
+        (Id.ComponentSet.max_elt components + 1)
+        (fun _ -> Hashtbl.create 0);
     edges = Edges.empty ();
   }
 
@@ -123,7 +114,7 @@ let extract_entity a e =
   let extracted =
     components
     |> List.map (fun cid ->
-           let table = Hashtbl.find a.table cid in
+           let table = Array.get a.table cid in
            let component = Hashtbl.find table e in
            (cid, component))
   in
@@ -131,7 +122,7 @@ let extract_entity a e =
   (* Now we know all components exist, we can safely remove the entity *)
   extracted
   |> List.iter (fun (cid, _) ->
-         let table = Hashtbl.find a.table cid in
+         let table = Array.get a.table cid in
          Hashtbl.remove table e);
 
   (* Finally, remove the entity from the entity set *)
@@ -162,18 +153,15 @@ let add_entity a e components =
   (* Add the components to the archetype *)
   Hashtbl.iter
     (fun cid c ->
-      match Hashtbl.find_opt a.table cid with
-      | Some table -> Hashtbl.add table e c
-      | None ->
-          let table = Hashtbl.create 0 in
-          Hashtbl.add table e c;
-          Hashtbl.add a.table cid table)
+      let table = Array.get a.table cid in
+      Hashtbl.replace table e c)
     components;
 
   (* Add the entity to the entity set *)
   a.entities <- Id.EntitySet.add e a.entities
 
 let get_component a c e =
-  match Hashtbl.find_opt a.table c with
-  | Some table -> Hashtbl.find_opt table e
-  | None -> None
+  if c >= Array.length a.table then None
+  else
+    let table = Array.get a.table c in
+    Hashtbl.find_opt table e

@@ -10,23 +10,6 @@ type t = {
   systems : System.Registry.t;
 }
 
-let to_string w =
-  Printf.sprintf
-    "World {\narchetype_index = %s\nentity_index = %s\ncomponent_index = %s\n}"
-    (Hashtbl.fold
-       (fun k v acc ->
-         Printf.sprintf "%s%d -> %s\n" acc k (Archetype.to_string v))
-       w.archetype_index "\n")
-    (Hashtbl.fold
-       (fun k v acc -> Printf.sprintf "%s%d -> %d\n" acc k v)
-       w.entity_index "\n")
-    (Hashtbl.fold
-       (fun k v acc ->
-         Printf.sprintf "%s%d -> %s}\n" acc k
-           (ArchetypeHashSet.elements v
-           |> List.fold_left (fun acc h -> Printf.sprintf "%s%d, " acc h) "{"))
-       w.component_index "\n")
-
 (* Create a new empty world *)
 let create () =
   (* Start with the empty archetype in the archetype index *)

@@ -21,12 +21,6 @@ end
 
 type t
 
-(**/**)
-
-val to_string : t -> string
-
-(**/**)
-
 val empty : unit -> t
 val create : Id.ComponentSet.t -> t
 val hash : t -> Hash.t

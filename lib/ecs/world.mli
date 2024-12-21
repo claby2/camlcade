@@ -15,7 +15,6 @@ val run_systems : t -> System.schedule -> unit
 
 (**/**)
 
-val to_string : t -> string
 val evaluate_query : t -> Query.t -> Query.Result.t
 
 (**/**)
