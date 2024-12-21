@@ -279,9 +279,49 @@ let test_multiple_query_systems () =
   assert (!foo_bars_count = List.length foo_bars);
   assert (!switches_count = List.length switches)
 
+let test_system_order () =
+  let world = World.create () in
+  let entity =
+    World.add_entity world
+    |> World.with_component world
+         (Component.pack (module Component.Transform.C) Math.Vec3.zero)
+  in
+  let create_system x = function
+    | [| result |] ->
+        result
+        |> List.iter (function
+             | _, [ transform ] ->
+                 let transform =
+                   transform |> Component.unpack
+                   |> Component.Transform.C.of_base
+                 in
+                 Math.Vec3.set_x transform x
+             | _ -> assert false)
+    | _ -> assert false
+  in
+  let system1 = create_system 1. in
+  let system2 = create_system 2. in
+
+  (* Add system2 then system1 after, ideally, system2 should run first *)
+  World.add_system world System.Update
+    [| Query.create [ Query.Required Component.Transform.C.id ] |]
+    system2;
+  World.add_system world System.Update
+    [| Query.create [ Query.Required Component.Transform.C.id ] |]
+    system1;
+
+  World.run_systems world System.Update;
+
+  let transform =
+    World.get_component world Component.Transform.C.id entity
+    |> Option.get |> Component.unpack |> Component.Transform.C.of_base
+  in
+  assert (Math.Vec3.x transform = 1.)
+
 let () =
   test_entity_lifecycle ();
   test_diabolical_archetype_graph ();
   test_evaluate_query ();
   test_systems ();
-  test_multiple_query_systems ()
+  test_multiple_query_systems ();
+  test_system_order ()

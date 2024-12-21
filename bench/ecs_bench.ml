@@ -54,5 +54,19 @@ let t3 =
       in
       assert (List.length results = 500))
 
-let tests = [ t1; t2; t3 ]
+let t4 =
+  Bench.Test.create ~name:"register and fetch systems" (fun () ->
+      let registry = System.Registry.create () in
+      for _ = 1 to 100 do
+        let system results = ignore results in
+        System.Registry.register registry System.Update
+          [|
+            Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
+            Query.create [ Query.Required Foo.C.id ];
+          |]
+          system
+      done;
+      System.Registry.fetch registry System.Update |> ignore)
+
+let tests = [ t1; t2; t3; t4 ]
 let command = Bench.make_command tests

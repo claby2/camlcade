@@ -21,7 +21,7 @@ let create () =
     archetype_index;
     entity_index = Hashtbl.create 0;
     component_index = Hashtbl.create 0;
-    systems = System.Registry.create;
+    systems = System.Registry.create ();
   }
 
 let get_archetype w entity =
