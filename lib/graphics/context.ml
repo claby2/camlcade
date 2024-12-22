@@ -1,8 +1,6 @@
 open Tsdl
 open Tgl4
-
-let ( >>= ) x f =
-  match x with Ok v -> f v | Error (`Msg msg) -> raise (Failure msg)
+open Util
 
 module T = struct
   type data = { win : Sdl.window; ctx : Sdl.gl_context; event : Sdl.event }
