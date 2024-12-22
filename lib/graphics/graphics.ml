@@ -1,3 +1,7 @@
+module Camera = Camera
+module Mesh = Mesh
+module Mesh3d = Mesh3d
+
 let initialize ~gl = function
   | [| [ (_, [ context ]) ]; [ (_, [ shader_manager ]) ]; meshes3d |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in

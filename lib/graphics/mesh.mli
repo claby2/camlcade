@@ -16,3 +16,4 @@ val set_attribute : t -> int -> Attribute.t -> unit
 val topology : t -> Topology.t
 val attributes : t -> (int, Attribute.t) Hashtbl.t
 val vertex_data : t -> float array
+val sphere : ?radius:float -> ?param1:int -> ?param2:int -> unit -> t

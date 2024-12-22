@@ -3,13 +3,14 @@ module Dim3 : sig
     type t
 
     val create :
+      ?pos:Math.Vec3.t ->
       ?look:Math.Vec3.t ->
       ?up:Math.Vec3.t ->
       ?height_angle:float ->
       ?near_plane:float ->
       ?far_plane:float ->
       ?aspect_ratio:float ->
-      Math.Vec3.t ->
+      unit ->
       t
 
     val view : t -> Math.Mat4.t

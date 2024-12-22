@@ -8,6 +8,7 @@ module Attribute = struct
     values : float array;
   }
 
+  let create size values = { size; values }
   let size t = t.size
   let values t = t.values
 end
@@ -71,9 +72,63 @@ let vertex_data t =
       t.cached_vertex_data <- Some data;
       data
 
-(*
 let sphere ?(radius = 0.5) ?(param1 = 2) ?(param2 = 3) () =
-  failwith "unimplemented"
+  let mesh = create TriangleList in
+  let param1 = max param1 2 in
+  let param2 = max param2 3 in
+  let positions = ref [] in
+  let normals = ref [] in
+  let add_position v =
+    let x, y, z = Math.Vec3.xyz v in
+    positions := z :: y :: x :: !positions
+  in
+  let add_normals v =
+    let x, y, z = Math.Vec3.xyz v in
+    normals := z :: y :: x :: !normals
+  in
+  let sphere_coord r theta phi =
+    Math.Vec3.make
+      (r *. sin phi *. cos theta)
+      (r *. cos phi)
+      (r *. sin phi *. sin theta)
+  in
+  let add_tile tl tr bl br =
+    let add v =
+      add_position v;
+      add_normals (Math.Vec3.normalize v)
+    in
+    add tl;
+    add bl;
+    add br;
 
+    add tl;
+    add br;
+    add tr
+  in
+  let add_wedge theta theta' =
+    let step = Float.pi /. float_of_int param1 in
+    for i = 0 to param1 - 1 do
+      let phi = float_of_int i *. step in
+      let phi' = float_of_int (i + 1) *. step in
+      let tl = sphere_coord radius theta theta' in
+      let tr = sphere_coord radius theta' phi' in
+      let bl = sphere_coord radius theta phi in
+      let br = sphere_coord radius theta' phi in
+      add_tile tl tr bl br
+    done
+  in
+  let step = 2. *. Float.pi /. float_of_int param2 in
+  for i = 0 to param2 - 1 do
+    let theta = float_of_int i *. step in
+    let theta' = float_of_int (i + 1) *. step in
+    add_wedge theta theta'
+  done;
+  set_attribute mesh 0
+    (Attribute.create 3 (!positions |> List.rev |> Array.of_list));
+  set_attribute mesh 1
+    (Attribute.create 3 (!normals |> List.rev |> Array.of_list));
+  mesh
+
+(*
 let cylinder ?(radius = 0.5) ?(half_height = 0.5) () = failwith "unimplemented"
 *)
