@@ -18,6 +18,9 @@ type t = {
   mutable cached_vertex_data : float array option;
 }
 
+let create topology =
+  { topology; attributes = Hashtbl.create 0; cached_vertex_data = None }
+
 let set_attribute t id attr =
   t.cached_vertex_data <- None;
   Hashtbl.replace t.attributes id attr
@@ -67,3 +70,10 @@ let vertex_data t =
       |> List.map snd |> List.iter load_attribute;
       t.cached_vertex_data <- Some data;
       data
+
+(*
+let sphere ?(radius = 0.5) ?(param1 = 2) ?(param2 = 3) () =
+  failwith "unimplemented"
+
+let cylinder ?(radius = 0.5) ?(half_height = 0.5) () = failwith "unimplemented"
+*)

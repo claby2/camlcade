@@ -11,6 +11,7 @@ end
 
 type t
 
+val create : Topology.t -> t
 val set_attribute : t -> int -> Attribute.t -> unit
 val topology : t -> Topology.t
 val attributes : t -> (int, Attribute.t) Hashtbl.t

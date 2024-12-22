@@ -1,2 +1,3 @@
 (library
-  (name math))
+  (name math)
+  (libraries lacaml))

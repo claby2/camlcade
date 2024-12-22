@@ -1,4 +1,3 @@
-(*
 module Dim3 : sig
   module T : sig
     type t
@@ -13,8 +12,8 @@ module Dim3 : sig
       Math.Vec3.t ->
       t
 
-    val view : t -> unit
-    val projection : t -> unit
+    val view : t -> Math.Mat4.t
+    val projection : t -> Math.Mat4.t
     val look : t -> Math.Vec3.t
     val up : t -> Math.Vec3.t
     val set_pos : t -> Math.Vec3.t -> unit
@@ -27,4 +26,3 @@ module Dim3 : sig
 
   module C : Ecs.Component.S with type t = T.t
 end
-*)
