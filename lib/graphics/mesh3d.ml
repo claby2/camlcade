@@ -33,11 +33,20 @@ module T = struct
           (Some varray) Gl.static_draw;
 
         let offset = ref 0 in
+        let stride =
+          Mesh.attributes t.mesh |> Hashtbl.to_seq_values
+          |> Seq.map Mesh.Attribute.size
+          |> Seq.fold_left ( + ) 0
+        in
         let bind_attrib loc attr =
+          let size_of_float = 4 in
+          (* TODO: Source size_of_float from somewhere *)
           Gl.enable_vertex_attrib_array loc;
           let dim = Mesh.Attribute.size attr in
+          let stride = stride * size_of_float in
           (* TODO: Here we assume attribute values are all floats *)
-          Gl.vertex_attrib_pointer loc dim Gl.float false 0 (`Offset !offset);
+          Gl.vertex_attrib_pointer loc dim Gl.float false stride
+            (`Offset (!offset * size_of_float));
           offset := !offset + dim
         in
         Mesh.attributes t.mesh |> Hashtbl.to_seq_values |> Seq.iteri bind_attrib;

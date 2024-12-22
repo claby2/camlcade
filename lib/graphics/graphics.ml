@@ -36,6 +36,7 @@ let render = function
 
 let shade3d = function
   | [| cameras; entities |] ->
+      check_gl_error ();
       let render_to_camera c =
         let render_entity mesh3d shader =
           match Shader.T.tag_opt shader with
@@ -53,10 +54,8 @@ let shade3d = function
                   in
                   load_matrix4fv ctm pid "modelMatrix";
                   load_matrix3fv normal_matrix pid "normalMatrix";
-                  print_gl_error ();
 
-                  Mesh3d.T.draw mesh3d;
-                  failwith "end")
+                  Mesh3d.T.draw mesh3d)
           | _ -> ()
         in
 
