@@ -52,6 +52,7 @@ module T = struct
         let window_event e =
           Sdl.Event.(window_event_enum (get e window_event_id))
         in
+        (* TODO: Make this non-blocking? *)
         Sdl.wait_event (Some event) >>= fun () ->
         (match Sdl.Event.(enum (get event typ)) with
         | `Quit -> raise Ecs.World.Quit

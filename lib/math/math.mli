@@ -32,6 +32,7 @@ module type Matrix = sig
   type t
 
   val create : ?default:float -> unit -> t
+  val identity : t
   val from_array : float array array -> t
   val to_array : t -> float array array
   val inverse : t -> t

@@ -40,6 +40,7 @@ module type Matrix = sig
   type t
 
   val create : ?default:float -> unit -> t
+  val identity : t
   val from_array : float array array -> t
   val to_array : t -> float array array
   val inverse : t -> t
@@ -55,6 +56,7 @@ end) : Matrix = struct
   type t = Mat.t
 
   let create ?(default = 0.) () = Mat.make B.dim B.dim default
+  let identity = Mat.identity B.dim
   let from_array a = Mat.of_array a
   let to_array m = Mat.to_array m
 

@@ -16,6 +16,10 @@ module T = struct
     f ();
     Gl.bind_vertex_array 0
 
+  let draw t =
+    with_vao t (fun _ ->
+        Gl.draw_arrays Gl.triangles 0 (Mesh.count_vertices t.mesh))
+
   let install_vbo t =
     with_vao t (fun () ->
         Gl.bind_buffer Gl.array_buffer t.vbo;

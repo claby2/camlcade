@@ -21,3 +21,14 @@ let get_string len f =
 
 let ( >>= ) x f =
   match x with Ok v -> f v | Error (`Msg msg) -> raise (Failure msg)
+
+let load_matrixfv n mat pid loc =
+  let loc = Gl.get_uniform_location pid loc in
+  let value = bigarray_create Bigarray.float32 (n * n) in
+  for i = 0 to (n * n) - 1 do
+    value.{i} <- mat.(i / n).(i mod n)
+  done;
+  Gl.uniform_matrix4fv loc 1 false value
+
+let load_matrix3fv mat = load_matrixfv 3 (Math.Mat3.to_array mat)
+let load_matrix4fv mat = load_matrixfv 4 (Math.Mat4.to_array mat)
