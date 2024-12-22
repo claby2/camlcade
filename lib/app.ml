@@ -15,5 +15,7 @@ let run a =
   in
   World.run_systems w Scheduler.Startup;
   (* TODO: Run main loop *)
-  Unix.sleep 3;
+  while not (World.has_quit w) do
+    World.run_systems w Scheduler.Update
+  done;
   World.run_systems w Scheduler.Last

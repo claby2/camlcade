@@ -148,8 +148,21 @@ let test_immediate () =
 
   assert (List.length (World.entities w) = 20)
 
+let test_quit () =
+  let w = World.create () in
+
+  assert (not (World.has_quit w));
+
+  let quit_system = function _ -> raise World.Quit in
+  World.add_system w Scheduler.Update [||] (System.Query quit_system);
+
+  World.run_systems w Scheduler.Update;
+
+  assert (World.has_quit w)
+
 let () =
   test_simple ();
   test_order ();
   test_complex ();
-  test_immediate ()
+  test_immediate ();
+  test_quit ()

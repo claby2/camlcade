@@ -3,7 +3,7 @@ module T : sig
 
   val empty : unit -> t
   val initialize : gl:int * int -> t -> unit
-  val draw : t -> unit
+  val render : t -> unit
   val destroy : t -> unit
 end
 

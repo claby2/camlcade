@@ -8,6 +8,7 @@ type t = {
   (* TODO: component id -> (archetype id -> column) *)
   component_index : (Id.Component.t, ArchetypeHashSet.t) Hashtbl.t;
   scheduler : (Query.t array * t System.t) Scheduler.t;
+  mutable quit : bool;
 }
 
 (* Create a new empty world *)
@@ -22,6 +23,7 @@ let create () =
     entity_index = Hashtbl.create 0;
     component_index = Hashtbl.create 0;
     scheduler = Scheduler.create ();
+    quit = false;
   }
 
 let get_archetype w entity =
@@ -146,11 +148,17 @@ let evaluate_query w (query : Query.t) =
   in
   Query.evaluate query candidate_archetypes
 
+exception Quit
+
 let run_systems w schedule =
   let run_system (queries, system) =
     let result = queries |> Array.map (evaluate_query w) in
-    match system with
-    | System.Query system -> system result
-    | System.Immediate system -> system w result
+    try
+      match system with
+      | System.Query system -> system result
+      | System.Immediate system -> system w result
+    with Quit -> w.quit <- true
   in
   Scheduler.fetch w.scheduler schedule |> List.iter run_system
+
+let has_quit w = w.quit

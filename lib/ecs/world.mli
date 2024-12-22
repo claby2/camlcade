@@ -19,6 +19,10 @@ val get_component :
 val add_system : t -> Scheduler.schedule -> Query.t array -> t System.t -> unit
 val run_systems : t -> Scheduler.schedule -> unit
 
+exception Quit
+
+val has_quit : t -> bool
+
 (**/**)
 
 val evaluate_query : t -> Query.t -> Query.Result.t
