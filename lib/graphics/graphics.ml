@@ -19,7 +19,9 @@ let initialize ~gl = function
 
       let initialize_mesh3d mesh3d =
         let mesh3d = mesh3d |> Ecs.Component.unpack |> Mesh3d.C.of_base in
-        Mesh3d.T.initialize mesh3d
+        Mesh3d.T.initialize mesh3d;
+        (* TODO: Is this the right place to install VBOs? *)
+        Mesh3d.T.install_vbo mesh3d
       in
       meshes3d
       |> List.iter (fun (_, m) ->
@@ -51,8 +53,10 @@ let shade3d = function
                   in
                   load_matrix4fv ctm pid "modelMatrix";
                   load_matrix3fv normal_matrix pid "normalMatrix";
+                  print_gl_error ();
 
-                  Mesh3d.T.draw mesh3d)
+                  Mesh3d.T.draw mesh3d;
+                  failwith "end")
           | _ -> ()
         in
 

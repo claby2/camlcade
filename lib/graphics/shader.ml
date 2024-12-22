@@ -4,7 +4,7 @@ open Util
 (* TODO: Do actual phong stuff here *)
 let phong_frag =
   "\n\
-   #version 330 core\n\n\
+   #version 400 core\n\n\
    in vec3 worldSpaceNormal;\n\
    in vec3 worldSpacePosition;\n\n\
    out vec4 fragColor;\n\n\
@@ -14,7 +14,7 @@ let phong_frag =
 
 let phong_vert =
   "\n\
-   #version 330 core\n\n\
+   #version 400 core\n\n\
    layout(location = 0) in vec3 vertexPos;\n\
    layout(location = 1) in vec3 vertexNormal;\n\n\
    uniform mat4 modelMatrix;\n\
@@ -64,10 +64,11 @@ module T = struct
     match !s with
     | Staged { frag; vert; t } ->
         compile vert Gl.vertex_shader >>= fun vert ->
-        compile frag Gl.vertex_shader >>= fun frag ->
+        compile frag Gl.fragment_shader >>= fun frag ->
         let pid = Gl.create_program () in
         Gl.attach_shader pid vert;
         Gl.attach_shader pid frag;
+        Gl.link_program pid;
         Gl.delete_shader vert;
         Gl.delete_shader frag;
         Ok pid >>= fun pid -> s := Initialized { pid; t }

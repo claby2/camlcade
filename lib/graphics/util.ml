@@ -32,3 +32,13 @@ let load_matrixfv n mat pid loc =
 
 let load_matrix3fv mat = load_matrixfv 3 (Math.Mat3.to_array mat)
 let load_matrix4fv mat = load_matrixfv 4 (Math.Mat4.to_array mat)
+
+let print_gl_error () =
+  let error = ref (Gl.get_error ()) in
+  let errored = ref false in
+  while !error != Gl.no_error do
+    print_endline (Printf.sprintf "%d\n" !error);
+    error := Gl.get_error ();
+    errored := true
+  done;
+  if !errored then failwith "shortcircuit in print_gl_error"
