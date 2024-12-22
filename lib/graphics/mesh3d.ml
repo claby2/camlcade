@@ -28,11 +28,13 @@ module T = struct
           (Gl.bigarray_byte_size varray)
           (Some varray) Gl.static_draw;
 
+        let offset = ref 0 in
         let bind_attrib loc attr =
           Gl.enable_vertex_attrib_array loc;
           let dim = Mesh.Attribute.size attr in
           (* TODO: Here we assume attribute values are all floats *)
-          Gl.vertex_attrib_pointer loc dim Gl.float false 0 (`Offset 0)
+          Gl.vertex_attrib_pointer loc dim Gl.float false 0 (`Offset !offset);
+          offset := !offset + dim
         in
         Mesh.attributes t.mesh |> Hashtbl.to_seq_values |> Seq.iteri bind_attrib;
 
