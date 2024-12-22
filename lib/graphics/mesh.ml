@@ -25,27 +25,27 @@ let set_attribute t id attr =
 let topology t = t.topology
 let attributes t = t.attributes
 
-let vertex_size t =
-  t.attributes |> Hashtbl.to_seq_values
-  |> Seq.fold_left (fun acc attr -> acc + Attribute.size attr) 0
-
-let count_vertices t =
-  if Hashtbl.length t.attributes = 0 then 0
-  else
-    t.attributes |> Hashtbl.to_seq_values
-    |> Seq.fold_left
-         (fun acc attr ->
-           let num_values = Array.length (Attribute.values attr) in
-           let size = Attribute.size attr in
-           min acc (num_values / size))
-         Int.max_int
-
-let vertex_data_size t = count_vertices t * vertex_size t
-
 let vertex_data t =
   match t.cached_vertex_data with
   | Some data -> data
   | None ->
+      let vertex_size t =
+        t.attributes |> Hashtbl.to_seq_values
+        |> Seq.fold_left (fun acc attr -> acc + Attribute.size attr) 0
+      in
+      let count_vertices t =
+        if Hashtbl.length t.attributes = 0 then 0
+        else
+          t.attributes |> Hashtbl.to_seq_values
+          |> Seq.fold_left
+               (fun acc attr ->
+                 let num_values = Array.length (Attribute.values attr) in
+                 let size = Attribute.size attr in
+                 min acc (num_values / size))
+               Int.max_int
+      in
+      let vertex_data_size t = count_vertices t * vertex_size t in
+
       let data = Array.make (vertex_data_size t) 0. in
       let vsize = vertex_size t in
       let attribute_offset = ref 0 in

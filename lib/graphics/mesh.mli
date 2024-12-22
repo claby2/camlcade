@@ -14,7 +14,4 @@ type t
 val set_attribute : t -> int -> Attribute.t -> unit
 val topology : t -> Topology.t
 val attributes : t -> (int, Attribute.t) Hashtbl.t
-val vertex_size : t -> int
-val count_vertices : t -> int
-val vertex_data_size : t -> int
 val vertex_data : t -> float array
