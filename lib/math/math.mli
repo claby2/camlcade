@@ -10,4 +10,8 @@ module Vec3 : sig
   val set_y : t -> float -> unit
   val set_z : t -> float -> unit
   val to_string : t -> string
+  val ( + ) : t -> t -> t
+  val ( - ) : t -> t -> t
+  val ( * ) : t -> t -> t
+  val ( / ) : t -> t -> t
 end
