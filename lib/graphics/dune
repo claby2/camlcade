@@ -1,0 +1,3 @@
+(library
+  (name graphics)
+  (libraries ecs tsdl tgls.tgl4))

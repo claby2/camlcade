@@ -1,4 +1,4 @@
-type schedule = Startup | Update
+type schedule = Startup | Update | Last
 type 'a t
 
 val create : unit -> 'a t
