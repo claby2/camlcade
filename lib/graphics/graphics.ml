@@ -1,7 +1,12 @@
 let initialize ~gl = function
-  | [| [ (_, [ context ]) ]; meshes3d |] ->
+  | [| [ (_, [ context ]) ]; [ (_, [ shader_manager ]) ]; meshes3d |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in
       Context.T.initialize ~gl context;
+
+      let shader_manager =
+        shader_manager |> Ecs.Component.unpack |> Shader.Manager.C.of_base
+      in
+      Shader.Manager.T.initialize shader_manager;
 
       meshes3d
       |> List.iter (fun (_, components) ->
@@ -21,10 +26,20 @@ let render = function
   | _ -> assert false
 
 let cleanup w = function
-  | [| [ (context_entity, [ context ]) ]; meshes3d |] ->
+  | [|
+      [ (context_entity, [ context ]) ];
+      [ (shader_manager_entity, [ shader_manager ]) ];
+      meshes3d;
+    |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in
       Context.T.destroy context;
       Ecs.World.remove_entity w context_entity;
+
+      let shader_manager =
+        shader_manager |> Ecs.Component.unpack |> Shader.Manager.C.of_base
+      in
+      Shader.Manager.T.destroy shader_manager;
+      Ecs.World.remove_entity w shader_manager_entity;
 
       meshes3d
       |> List.iter (fun (_, components) ->
@@ -38,14 +53,27 @@ let cleanup w = function
   | _ -> assert false
 
 let plugin w =
-  Ecs.World.add_entity w
-  |> Ecs.World.with_component w
-       (Ecs.Component.pack (module Context.C) (Context.T.empty ()))
-  |> ignore;
+  let add_context w =
+    Ecs.World.add_entity w
+    |> Ecs.World.with_component w
+         (Ecs.Component.pack (module Context.C) (Context.T.empty ()))
+    |> ignore
+  in
+  let add_shader_manager w =
+    Ecs.World.add_entity w
+    |> Ecs.World.with_component w
+         (Ecs.Component.pack
+            (module Shader.Manager.C)
+            (Shader.Manager.T.empty ()))
+    |> ignore
+  in
+  add_context w;
+  add_shader_manager w;
 
   Ecs.World.add_system w Ecs.Scheduler.Startup
     [|
       Ecs.Query.create [ Ecs.Query.Required Context.C.id ];
+      Ecs.Query.create [ Ecs.Query.Required Shader.Manager.C.id ];
       Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ];
     |]
     (Ecs.System.Query (initialize ~gl:(4, 0)));
@@ -57,6 +85,7 @@ let plugin w =
   Ecs.World.add_system w Ecs.Scheduler.Last
     [|
       Ecs.Query.create [ Ecs.Query.Required Context.C.id ];
+      Ecs.Query.create [ Ecs.Query.Required Shader.Manager.C.id ];
       Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ];
     |]
     (Ecs.System.Immediate cleanup)
