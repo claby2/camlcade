@@ -118,7 +118,38 @@ let test_complex () =
          in
          assert (int_of_string !name = Id.Entity.to_int e))
 
+let test_immediate () =
+  let w = World.create () in
+  let original_entity =
+    World.add_entity w
+    |> World.with_component w (Component.pack (module Name.C) (ref "whatever"))
+  in
+
+  assert (List.length (World.entities w) = 1);
+
+  let spawn_more_entities world : Query.Result.t array -> unit = function
+    | _ -> (
+        for _ = 1 to 10 do
+          World.add_entity world
+          |> World.add_component world (Component.pack (module Foo.C) (ref 0))
+        done;
+        try World.remove_entity world original_entity with _ -> ())
+  in
+
+  World.add_system w Scheduler.Update
+    [| Query.create [] |]
+    (System.Immediate spawn_more_entities);
+
+  World.run_systems w Scheduler.Update;
+
+  assert (List.length (World.entities w) = 10);
+
+  World.run_systems w Scheduler.Update;
+
+  assert (List.length (World.entities w) = 20)
+
 let () =
   test_simple ();
   test_order ();
-  test_complex ()
+  test_complex ();
+  test_immediate ()
