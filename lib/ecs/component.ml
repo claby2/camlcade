@@ -1,5 +1,3 @@
-open Math
-
 type base = ..
 
 module type S = sig
@@ -26,7 +24,7 @@ end
 
 module Transform = struct
   module T = struct
-    type t = Vec3.t
+    type t = Math.Vec3.t
   end
 
   module C = Make (T)

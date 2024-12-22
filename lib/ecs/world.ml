@@ -42,6 +42,8 @@ let remove_entity w entity =
 (* TODO: Should we remove the archetype if it's empty? i.e. should it be
    removed from the archetype index and/or its hash be removed from component index? *)
 
+let entities w = w.entity_index |> Hashtbl.to_seq_keys |> List.of_seq
+
 let create_archetype_with_components w components =
   let new_archetype = Archetype.create components in
   if Hashtbl.mem w.archetype_index (Archetype.hash new_archetype) then
@@ -108,10 +110,10 @@ let remove_component w component_id entity =
   Hashtbl.replace w.component_index component_id new_archetype_set
 
 (* Get the value of a specific component for a given entity if it exists *)
-let get_component w component entity =
+let get_component w entity component =
   try
     let archetype = get_archetype w entity in
-    Archetype.get_component archetype component entity
+    Archetype.get_component archetype entity component
   with Not_found -> None
 
 let add_system w schedule queries system =

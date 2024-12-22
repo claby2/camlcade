@@ -1,8 +1,10 @@
 module type S = sig
-  type t = int
+  type t
 
   val next : unit -> t
   val compare : t -> t -> int
+  val of_int : int -> t
+  val to_int : t -> int
 end
 
 module Make () : S

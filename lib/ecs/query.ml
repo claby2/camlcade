@@ -45,10 +45,10 @@ let evaluate q archetypes =
                   q.terms
                   |> List.map (function
                        | Required c ->
-                           Archetype.get_component a c e |> Option.get
+                           Archetype.get_component a e c |> Option.get
                        | Optional c ->
                            (* If the component is not present, return a None component *)
-                           Archetype.get_component a c e
+                           Archetype.get_component a e c
                            |> Option.value
                                 ~default:
                                   (Component.pack (module Component.None.C) ()))

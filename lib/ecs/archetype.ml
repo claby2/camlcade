@@ -61,14 +61,12 @@ let empty () =
   }
 
 let create components =
+  let max_id = Id.ComponentSet.max_elt components |> Id.Component.to_int in
   {
     hash = Hash.hash (components |> Id.ComponentSet.to_list);
     components;
     entities = Id.EntitySet.empty;
-    table =
-      Array.init
-        (Id.ComponentSet.max_elt components + 1)
-        (fun _ -> Hashtbl.create 0);
+    table = Array.init (max_id + 1) (fun _ -> Hashtbl.create 0);
     edges = Edges.empty ();
   }
 
@@ -103,23 +101,26 @@ let hash_without_component a c =
 let components a = a.components
 let entities a = a.entities
 
-(* Remove an entity from the archetype and return its components *)
-let extract_entity a e =
+let get_component a e c =
+  let c = Id.Component.to_int c in
+  if c >= Array.length a.table then None
+  else
+    let table = Array.get a.table c in
+    Hashtbl.find_opt table e
+
+let get_entity a e =
   if not (Id.EntitySet.mem e a.entities) then raise Not_found;
 
-  (* Gather all components for the entity before mutating the archetype *)
   let components = Id.ComponentSet.to_list a.components in
-  let extracted =
-    components
-    |> List.map (fun cid ->
-           let table = Array.get a.table cid in
-           let component = Hashtbl.find table e in
-           (cid, component))
-  in
+  components |> List.map (fun cid -> (cid, get_component a e cid |> Option.get))
 
+(* Remove an entity from the archetype and return its components *)
+let extract_entity a e =
+  let extracted = get_entity a e in
   (* Now we know all components exist, we can safely remove the entity *)
   extracted
   |> List.iter (fun (cid, _) ->
+         let cid = Id.Component.to_int cid in
          let table = Array.get a.table cid in
          Hashtbl.remove table e);
 
@@ -151,15 +152,10 @@ let add_entity a e components =
   (* Add the components to the archetype *)
   Hashtbl.iter
     (fun cid c ->
+      let cid = Id.Component.to_int cid in
       let table = Array.get a.table cid in
       Hashtbl.replace table e c)
     components;
 
   (* Add the entity to the entity set *)
   a.entities <- Id.EntitySet.add e a.entities
-
-let get_component a c e =
-  if c >= Array.length a.table then None
-  else
-    let table = Array.get a.table c in
-    Hashtbl.find_opt table e

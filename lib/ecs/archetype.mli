@@ -23,13 +23,19 @@ type t
 
 val empty : unit -> t
 val create : Id.ComponentSet.t -> t
+
+(* Hash *)
 val hash : t -> Hash.t
 val hash_with_component : t -> Id.Component.t -> Hash.t
 val hash_without_component : t -> Id.Component.t -> Hash.t
+
+(* Components *)
 val components : t -> Id.ComponentSet.t
+
+val get_component :
+  t -> Id.Entity.t -> Id.Component.t -> Component.packed option
+
+(* Entities *)
 val entities : t -> Id.EntitySet.t
 val extract_entity : t -> Id.Entity.t -> Component.packed list
 val add_entity : t -> Id.Entity.t -> Component.packed list -> unit
-
-val get_component :
-  t -> Id.Component.t -> Id.Entity.t -> Component.packed option
