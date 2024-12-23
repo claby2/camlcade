@@ -1,7 +1,13 @@
 module Hash = struct
   type t = int
 
-  let hash l = l |> List.sort compare |> Hashtbl.hash
+  let hash l =
+    (* Convert to a string first rather than operate on the list directly
+       since Hashtbl.hash stops iterating through a list after 10 elements *)
+    l |> List.sort compare
+    |> List.map (fun v -> v |> Id.Component.to_int |> string_of_int)
+    |> String.concat "" |> Hashtbl.hash
+
   let compare = compare
 end
 

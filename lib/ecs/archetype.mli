@@ -1,7 +1,7 @@
 module Hash : sig
   type t = int
 
-  val hash : 'a list -> t
+  val hash : Id.Component.t list -> t
   val compare : t -> t -> int
 end
 

@@ -2,10 +2,15 @@ open Util
 open Ecs
 
 let test_hash () =
-  assert (Archetype.Hash.hash [] = Archetype.Hash.hash []);
-  assert (Archetype.Hash.hash [ 1 ] = Archetype.Hash.hash [ 1 ]);
-  assert (Archetype.Hash.hash [ 1; 2 ] = Archetype.Hash.hash [ 2; 1 ]);
-  assert (Archetype.Hash.hash [ 1; 2 ] <> Archetype.Hash.hash [ 1 ])
+  let open Archetype.Hash in
+  let ids = List.map Id.Component.of_int in
+  assert (hash [] = hash []);
+  assert (hash (ids [ 1 ]) = hash (ids [ 1 ]));
+  assert (hash (ids [ 1; 2 ]) = hash (ids [ 2; 1 ]));
+  assert (hash (ids [ 1; 2 ]) <> hash (ids [ 1 ]));
+  assert (
+    hash (ids (List.init 20 (fun i -> i)))
+    <> hash (ids (List.init 21 (fun i -> i))))
 
 let test_edges () =
   let edges = Archetype.Edges.empty () in
