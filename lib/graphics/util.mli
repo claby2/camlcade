@@ -20,3 +20,5 @@ val ( >>= ) : ('a, [< `Msg of string ]) result -> ('a -> 'b) -> 'b
 val load_matrix4fv : Math.Mat4.t -> int -> string -> unit
 val load_matrix3fv : Math.Mat3.t -> int -> string -> unit
 val check_gl_error : unit -> unit
+val print_mat4 : Math.Mat4.t -> unit
+val print_mat3 : Math.Mat3.t -> unit

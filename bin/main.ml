@@ -11,14 +11,15 @@ let () =
                   (Ecs.Component.pack
                      (module Graphics.Camera.Dim3.C)
                      (Graphics.Camera.Dim3.T.create
-                        ~pos:(Math.Vec3.make 10. 0. 0.) ()))
+                        ~pos:(Math.Vec3.make 3. 3. 3.) ()))
            in
            let _sphere =
              Ecs.World.add_entity w
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Mesh3d.C)
-                     (Graphics.Mesh3d.T.from_mesh (Graphics.Mesh.sphere ())))
+                     (Graphics.Mesh3d.T.from_mesh
+                        (Graphics.Mesh.sphere ~param1:25 ~param2:25 ())))
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Shader.C)

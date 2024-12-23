@@ -1,4 +1,5 @@
 open Util
+open Tgl4
 module Camera = Camera
 module Mesh = Mesh
 module Mesh3d = Mesh3d
@@ -37,6 +38,8 @@ let render = function
 let shade3d = function
   | [| cameras; entities |] ->
       check_gl_error ();
+      Gl.clear_color 0. 0. 0. 1.;
+      Gl.clear Gl.color_buffer_bit;
       let render_to_camera c =
         let render_entity mesh3d shader =
           match Shader.T.tag_opt shader with

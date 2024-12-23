@@ -34,40 +34,29 @@ module T = struct
         t := Some { win; ctx; event }
     | Some _ -> ()
 
-  let draw t =
-    match !t with
-    | None -> ()
-    | Some { win; _ } ->
-        Gl.clear_color 0. 0. 0. 1.;
-        Gl.clear Gl.color_buffer_bit;
-        Sdl.gl_swap_window win
-
   let render t =
     match !t with
     | None -> ()
     | Some { event; win; _ } ->
+        Sdl.gl_swap_window win;
         let key_scancode e =
           Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
         in
         let window_event e =
           Sdl.Event.(window_event_enum (get e window_event_id))
         in
-        (* TODO: Make this non-blocking? *)
-        Sdl.wait_event (Some event) >>= fun () ->
-        (match Sdl.Event.(enum (get event typ)) with
-        | `Quit -> raise Ecs.World.Quit
-        | `Key_down when key_scancode event = `Escape -> raise Ecs.World.Quit
-        | `Window_event -> (
-            match window_event event with
-            | `Exposed | `Resized ->
-                let w, h = Sdl.get_window_size win in
-                Gl.viewport 0 0 w h;
-                draw t;
-                draw t;
-                Ok ()
-            | _ -> Ok ())
-        | _ -> Ok ())
-        >>= ignore
+        while Sdl.poll_event (Some event) do
+          match Sdl.Event.(enum (get event typ)) with
+          | `Quit -> raise Ecs.World.Quit
+          | `Key_down when key_scancode event = `Escape -> raise Ecs.World.Quit
+          | `Window_event -> (
+              match window_event event with
+              | `Exposed | `Resized ->
+                  let w, h = Sdl.get_window_size win in
+                  Gl.viewport 0 0 w h
+              | _ -> ())
+          | _ -> ()
+        done
 
   let destroy t =
     match !t with

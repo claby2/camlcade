@@ -26,7 +26,7 @@ let load_matrixfv n mat f pid loc =
   let loc = Gl.get_uniform_location pid loc in
   let value = bigarray_create Bigarray.float32 (n * n) in
   for i = 0 to (n * n) - 1 do
-    value.{i} <- mat.(i / n).(i mod n)
+    value.{i} <- mat.(i mod n).(i / n)
   done;
   f loc 1 false value
 
@@ -45,3 +45,16 @@ let check_gl_error () =
     errored := true
   done;
   if !errored then failwith "shortcircuit in print_gl_error"
+
+let print_arrays a =
+  Printf.printf "[|";
+  Array.iter
+    (fun a ->
+      Printf.printf "[|";
+      Array.iter (fun f -> Printf.printf "%f, " f) a;
+      Printf.printf "|]\n")
+    a;
+  Printf.printf "|]\n"
+
+let print_mat4 m = print_arrays (Math.Mat4.to_array m)
+let print_mat3 m = print_arrays (Math.Mat3.to_array m)

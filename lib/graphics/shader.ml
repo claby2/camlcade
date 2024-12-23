@@ -9,7 +9,7 @@ let phong_frag =
    in vec3 worldSpacePosition;\n\n\
    out vec4 fragColor;\n\n\
    void main() {\n\
-  \    fragColor = vec4(1.0, 1.0, 1.0, 1.0);\n\
+  \    fragColor = vec4(abs(worldSpaceNormal), 1.0);\n\
    }\n"
 
 let phong_vert =
