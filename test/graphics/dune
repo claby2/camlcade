@@ -1,0 +1,5 @@
+(tests
+  (names
+    test_vertex_mesh)
+  (libraries camlcade))
+

@@ -18,8 +18,10 @@ let () =
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Mesh3d.C)
-                     (Graphics.Mesh3d.T.from_mesh
-                        (Graphics.Mesh.sphere ~param1:25 ~param2:25 ())))
+                     (Graphics.Mesh3d.T.from_vertex_mesh
+                        (Graphics.Vertex_mesh.of_primitive
+                           (Graphics.Primitive.Sphere.create ~param1:10
+                              ~param2:10 ()))))
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Shader.C)

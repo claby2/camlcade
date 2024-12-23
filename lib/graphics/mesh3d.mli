@@ -1,8 +1,8 @@
 module T : sig
   type t
 
-  val from_mesh : Mesh.t -> t
-  val mesh : t -> Mesh.t
+  val from_vertex_mesh : Vertex_mesh.t -> t
+  val vertex_mesh : t -> Vertex_mesh.t
   val initialize : t -> unit
   val with_vao : t -> (unit -> unit) -> unit
   val draw : t -> unit

@@ -2,60 +2,74 @@ open Tgl4
 open Util
 
 module T = struct
-  type t = { mesh : Mesh.t; mutable vao : int; mutable vbo : int }
+  type t = {
+    mesh : Vertex_mesh.t;
+    mutable vao : int option;
+    mutable vbo : int option;
+  }
 
-  let from_mesh mesh = { mesh; vao = 0; vbo = 0 }
-  let mesh t = t.mesh
+  let from_vertex_mesh mesh = { mesh; vao = None; vbo = None }
+  let vertex_mesh t = t.mesh
 
   let initialize t =
-    t.vao <- get_int (Gl.gen_vertex_arrays 1);
-    t.vbo <- get_int (Gl.gen_buffers 1)
+    match (t.vao, t.vbo) with
+    | Some _, Some _ -> ()
+    | _ ->
+        t.vao <- Some (get_int (Gl.gen_vertex_arrays 1));
+        t.vbo <- Some (get_int (Gl.gen_buffers 1))
 
   let with_vao t f =
-    Gl.bind_vertex_array t.vao;
-    f ();
-    Gl.bind_vertex_array 0
+    match t.vao with
+    | None -> invalid_arg "Mesh3d.with_vao: VAO not initialized"
+    | Some vao ->
+        Gl.bind_vertex_array vao;
+        f ();
+        Gl.bind_vertex_array 0
 
   let draw t =
     with_vao t (fun _ ->
-        Gl.draw_arrays Gl.triangles 0 (Mesh.count_vertices t.mesh))
+        let mode =
+          match Vertex_mesh.topology t.mesh with
+          | Vertex_mesh.TriangleList -> Gl.triangles
+        in
+        Gl.draw_arrays mode 0 (Vertex_mesh.count_vertices t.mesh))
 
   let install_vbo t =
-    with_vao t (fun () ->
-        Gl.bind_buffer Gl.array_buffer t.vbo;
+    match t.vbo with
+    | None -> invalid_arg "Mesh3d.install_vbo: VBO not initialized"
+    | Some vbo ->
+        with_vao t (fun () ->
+            Gl.bind_buffer Gl.array_buffer vbo;
 
-        (* TODO: OPTIMIZATION! Only do this if the mesh has changed? How to do this? *)
-        let vdata = Mesh.vertex_data t.mesh in
-        let varray = bigarray_create Bigarray.float32 (Array.length vdata) in
-        vdata |> Array.iteri (fun i v -> varray.{i} <- v);
-        Gl.buffer_data Gl.array_buffer
-          (Gl.bigarray_byte_size varray)
-          (Some varray) Gl.static_draw;
+            let vertex_data = Vertex_mesh.vertex_data t.mesh in
+            let varray =
+              bigarray_create Bigarray.float32 (Array.length vertex_data)
+            in
+            vertex_data |> Array.iteri (fun i v -> varray.{i} <- v);
+            Gl.buffer_data Gl.array_buffer
+              (Gl.bigarray_byte_size varray)
+              (Some varray) Gl.static_draw;
 
-        let offset = ref 0 in
-        let stride =
-          Mesh.attributes t.mesh |> Hashtbl.to_seq_values
-          |> Seq.map Mesh.Attribute.size
-          |> Seq.fold_left ( + ) 0
-        in
-        let bind_attrib loc attr =
-          let size_of_float = 4 in
-          (* TODO: Source size_of_float from somewhere *)
-          Gl.enable_vertex_attrib_array loc;
-          let dim = Mesh.Attribute.size attr in
-          let stride = stride * size_of_float in
-          (* TODO: Here we assume attribute values are all floats *)
-          Gl.vertex_attrib_pointer loc dim Gl.float false stride
-            (`Offset (!offset * size_of_float));
-          offset := !offset + dim
-        in
-        Mesh.attributes t.mesh |> Hashtbl.to_seq_values |> Seq.iteri bind_attrib;
+            let size_of_float = 4 in
+            let stride = Vertex_mesh.vertex_size t.mesh * size_of_float in
+            let attribute_info = Vertex_mesh.attribute_info t.mesh in
+            let offset = ref 0 in
+            attribute_info
+            |> Seq.iter (fun info ->
+                   let { Vertex_mesh.Attribute.index; size } = info in
+                   Gl.enable_vertex_attrib_array index;
+                   Gl.vertex_attrib_pointer index size Gl.float false stride
+                     (`Offset (!offset * size_of_float));
+                   offset := !offset + size);
 
-        Gl.bind_buffer Gl.array_buffer 0)
+            Gl.bind_buffer Gl.array_buffer 0)
 
   let destroy t =
-    set_int (Gl.delete_buffers 1) t.vbo;
-    set_int (Gl.delete_vertex_arrays 1) t.vao
+    match (t.vbo, t.vao) with
+    | Some vbo, Some vao ->
+        set_int (Gl.delete_buffers 1) vbo;
+        set_int (Gl.delete_vertex_arrays 1) vao
+    | _ -> ()
 end
 
 module C = Ecs.Component.Make (T)
