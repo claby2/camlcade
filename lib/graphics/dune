@@ -1,34 +1,4 @@
 (include_subdirs qualified)
 (library
   (name graphics)
-    (c_library_flags
-    -L/Users/claby2/.opam/default/lib/base
-    -L/Users/claby2/.opam/default/lib/base/base_internalhash_types
-    -L/Users/claby2/.opam/default/lib/base_bigstring
-    -L/Users/claby2/.opam/default/lib/bin_prot
-    -L/Users/claby2/.opam/default/lib/core
-    -L/Users/claby2/.opam/default/lib/core/heap_block
-    -L/Users/claby2/.opam/default/lib/core_kernel/version_util
-    -L/Users/claby2/.opam/default/lib/core_unix
-    -L/Users/claby2/.opam/default/lib/core_unix/core_thread
-    -L/Users/claby2/.opam/default/lib/core_unix/error_checking_mutex
-    -L/Users/claby2/.opam/default/lib/core_unix/filename_unix
-    -L/Users/claby2/.opam/default/lib/core_unix/linux_ext
-    -L/Users/claby2/.opam/default/lib/core_unix/signal_unix
-    -L/Users/claby2/.opam/default/lib/core_unix/sys_unix
-    -L/Users/claby2/.opam/default/lib/core_unix/time_stamp_counter
-    -L/Users/claby2/.opam/default/lib/core_unix/time_stamp_counter
-    -L/Users/claby2/.opam/default/lib/ctypes
-    -L/Users/claby2/.opam/default/lib/integers
-    -L/Users/claby2/.opam/default/lib/lacaml
-    -L/Users/claby2/.opam/default/lib/lambda-term
-    -L/Users/claby2/.opam/default/lib/lwt/unix
-    -L/Users/claby2/.opam/default/lib/ocaml
-    -L/Users/claby2/.opam/default/lib/ocaml_intrinsics
-    -L/Users/claby2/.opam/default/lib/ppx_expect/collector
-    -L/Users/claby2/.opam/default/lib/spawn
-    -L/Users/claby2/.opam/default/lib/tgls
-    -L/Users/claby2/.opam/default/lib/time_now
-    -L/Users/claby2/.opam/default/lib/tsdl
-    -L/Users/claby2/.opam/default/lib/xdg)
   (libraries ecs tsdl tgls.tgl4))
