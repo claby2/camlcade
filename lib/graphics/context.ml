@@ -30,6 +30,9 @@ module T = struct
           create_window ~gl >>= fun (win, ctx) -> (win, ctx)
         in
 
+        Gl.enable Gl.depth_test;
+        Gl.cull_face Gl.back;
+
         let event = Sdl.Event.create () in
         t := Some { win; ctx; event }
     | Some _ -> ()
