@@ -1,5 +1,16 @@
 open Camlcade
 
+module Ball = struct
+  module T = struct
+    type t = unit
+  end
+
+  module C = Ecs.Component.Make (T)
+end
+
+let move_ball =
+  Ecs.System.Query (function [| _q1 |] -> () | _ -> assert false)
+
 let () =
   let app =
     App.create ()
@@ -18,15 +29,23 @@ let () =
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Mesh3d.C)
-                     (Graphics.Mesh3d.T.from_vertex_mesh
-                        (Graphics.Vertex_mesh.of_primitive
-                           (Graphics.Primitive.Sphere.create ~param1:10
-                              ~param2:10 ()))))
+                     (Graphics.Mesh3d.T.from_primitive
+                        (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10
+                           ())))
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Shader.C)
                      Graphics.Shader.T.phong)
+             |> Ecs.World.with_component w
+                  (Ecs.Component.pack (module Ball.C) ())
            in
+
+           Ecs.World.add_system w Ecs.Scheduler.Update
+             [|
+               Ecs.Query.create
+                 [ Ecs.Query.Required Ecs.Component.Transform.C.id ];
+             |]
+             move_ball;
 
            ())
   in

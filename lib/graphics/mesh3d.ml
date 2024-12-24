@@ -9,6 +9,10 @@ module T = struct
   }
 
   let from_vertex_mesh mesh = { mesh; vao = None; vbo = None }
+
+  let from_primitive primitive =
+    Vertex_mesh.of_primitive primitive |> from_vertex_mesh
+
   let vertex_mesh t = t.mesh
 
   let initialize t =

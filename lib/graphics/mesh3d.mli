@@ -1,6 +1,7 @@
 module T : sig
   type t
 
+  val from_primitive : Primitive.t -> t
   val from_vertex_mesh : Vertex_mesh.t -> t
   val vertex_mesh : t -> Vertex_mesh.t
   val initialize : t -> unit
