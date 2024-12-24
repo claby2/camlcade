@@ -1,19 +1,33 @@
 module Vec3 = struct
-  type t = { mutable x : float; mutable y : float; mutable z : float }
+  type t = (float * float * float) ref
 
-  let make x y z = { x; y; z }
-  let zero = { x = 0.; y = 0.; z = 0. }
-  let xyz v = (v.x, v.y, v.z)
-  let x v = v.x
-  let y v = v.y
-  let z v = v.z
-  let set_x v x = v.x <- x
-  let set_y v y = v.y <- y
-  let set_z v z = v.z <- z
-  let to_string v = Printf.sprintf "{x=%f, y=%f, z=%f}" v.x v.y v.z
-  let sum v = v.x +. v.y +. v.z
-  let map f v = { x = f v.x; y = f v.y; z = f v.z }
-  let map2 f v1 v2 = { x = f v1.x v2.x; y = f v1.y v2.y; z = f v1.z v2.z }
+  let make x y z = ref (x, y, z)
+  let zero = make 0. 0. 0.
+  let xyz v = !v
+  let x v = xyz v |> fun (x, _, _) -> x
+  let y v = xyz v |> fun (_, y, _) -> y
+  let z v = xyz v |> fun (_, _, z) -> z
+
+  let set_x v x =
+    let _, y, z = !v in
+    v := (x, y, z)
+
+  let set_y v y =
+    let x, _, z = !v in
+    v := (x, y, z)
+
+  let set_z v z =
+    let x, y, _ = !v in
+    v := (x, y, z)
+
+  let to_string v = Printf.sprintf "{x=%f, y=%f, z=%f}" (x v) (y v) (z v)
+
+  let sum v =
+    let x, y, z = !v in
+    x +. y +. z
+
+  let map f v = make (f (x v)) (f (y v)) (f (z v))
+  let map2 f v1 v2 = make (f (x v1) (x v2)) (f (y v1) (y v2)) (f (z v1) (z v2))
   let ( + ) = map2 ( +. )
   let ( - ) = map2 ( -. )
   let ( * ) = map2 ( *. )
@@ -31,8 +45,10 @@ module Vec3 = struct
   let scale f = map (fun x -> x *. f)
 
   let cross v1 v2 =
-    let lhs = make (v1.y *. v2.z) (v1.z *. v2.x) (v1.x *. v2.y) in
-    let rhs = make (v2.y *. v1.z) (v2.z *. v1.x) (v2.x *. v1.y) in
+    let x1, y1, z1 = !v1 in
+    let x2, y2, z2 = !v2 in
+    let lhs = make (y1 *. z2) (z1 *. x2) (x1 *. y2) in
+    let rhs = make (y2 *. z1) (z2 *. x1) (x2 *. y1) in
     lhs - rhs
 end
 
