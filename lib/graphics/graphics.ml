@@ -1,7 +1,6 @@
 open Util
 open Tgl4
 module Camera = Camera
-module Mesh = Mesh
 module Mesh3d = Mesh3d
 module Shader = Shader
 module Vertex_mesh = Vertex_mesh
@@ -52,9 +51,9 @@ let shade3d = function
                     "projectionMatrix";
 
                   (* TODO: This ctm is currently hardcoded, we should fetch this from the transform *)
-                  let ctm = Math.Mat4.identity in
+                  let ctm = Math.Mat4.id in
                   let normal_matrix =
-                    Math.Mat3.inverse (Math.Mat3.transpose Math.Mat3.identity)
+                    Math.Mat3.inv (Math.Mat3.transpose Math.Mat3.id)
                   in
                   load_matrix4fv ctm pid "modelMatrix";
                   load_matrix3fv normal_matrix pid "normalMatrix";

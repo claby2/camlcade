@@ -7,13 +7,13 @@ type config = {
 }
 
 let sphere_coord r theta phi =
-  Math.Vec3.make
+  Math.Vec3.v
     (r *. sin phi *. cos theta)
     (r *. cos phi)
     (r *. sin phi *. sin theta)
 
 let add_vec3 l v =
-  let x, y, z = Math.Vec3.xyz v in
+  let x, y, z = Math.Vec3.to_tuple v in
   l := x :: y :: z :: !l
 
 let add_tile c tl tr bl br =

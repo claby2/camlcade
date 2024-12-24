@@ -1,3 +1,3 @@
 (library
   (name math)
-  (libraries lacaml))
+  (libraries gg))

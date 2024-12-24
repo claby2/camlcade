@@ -15,6 +15,7 @@ depends: [
   "tgls"
   "tsdl"
   "core_bench"
+  "gg"
   "odoc" {with-doc}
 ]
 build: [

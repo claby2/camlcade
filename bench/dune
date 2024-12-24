@@ -11,3 +11,7 @@
   (alias bench-graphics)
   (deps benchmark.exe)
   (action (run ./benchmark.exe graphics -quota 1)))
+(rule
+  (alias bench-math)
+  (deps benchmark.exe)
+  (action (run ./benchmark.exe math -quota 1)))
