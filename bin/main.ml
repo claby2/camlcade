@@ -9,7 +9,16 @@ module Ball = struct
 end
 
 let move_ball =
-  Ecs.System.Query (function [| _q1 |] -> () | _ -> assert false)
+  Ecs.System.Query
+    (function
+    | [| [ (_, [ transform ]) ] |] ->
+        let transform =
+          transform |> Ecs.Component.unpack (module Transform.C)
+        in
+        let tx, _, tz = Math.Vec3.to_tuple (Transform.translation transform) in
+        let ty = sin (Unix.gettimeofday ()) in
+        Transform.set_translation transform (Math.Vec3.v tx ty tz)
+    | _ -> assert false)
 
 let plugin w =
   let _camera =
@@ -24,15 +33,20 @@ let plugin w =
     |> Ecs.World.with_component w
          (Ecs.Component.pack
             (module Graphics.Mesh3d.C)
-            (Graphics.Mesh3d.from_primitive
+            (Graphics.Mesh3d.of_primitive
                (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ())))
+    |> Ecs.World.with_component w
+         (Ecs.Component.pack (module Transform.C) (Transform.identity ()))
     |> Ecs.World.with_component w
          (Ecs.Component.pack (module Graphics.Shader.C) Graphics.Shader.phong)
     |> Ecs.World.with_component w (Ecs.Component.pack (module Ball.C) ())
   in
 
   Ecs.World.add_system w Ecs.Scheduler.Update
-    [| Ecs.Query.create [ Ecs.Query.Required Ecs.Component.Transform.C.id ] |]
+    [|
+      Ecs.Query.create ~filter:(Ecs.Query.Filter.With Ball.C.id)
+        [ Ecs.Query.Required Transform.C.id ];
+    |]
     move_ball
 
 let () =

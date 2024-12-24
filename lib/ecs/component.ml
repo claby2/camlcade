@@ -23,14 +23,6 @@ end) : S with type t = B.inner = struct
   let to_base t = T t
 end
 
-module Transform = struct
-  type t = Math.Vec3.t
-
-  module C = Make (struct
-    type inner = t
-  end)
-end
-
 (* A component that doesn't have any data.
    Mainly used for optional components in a query result *)
 module None = struct

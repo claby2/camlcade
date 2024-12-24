@@ -42,7 +42,7 @@ let shade3d = function
       Gl.clear_color 0. 0. 0. 1.;
       Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
       let render_to_camera c =
-        let render_entity mesh3d shader =
+        let render_entity mesh3d shader t_opt =
           match Shader.tag_opt shader with
           | Some Shader.Phong ->
               Shader.with_shader shader (fun pid ->
@@ -50,12 +50,17 @@ let shade3d = function
                   load_matrix4fv (Camera.Dim3.projection c) pid
                     "projectionMatrix";
 
-                  (* TODO: This ctm is currently hardcoded, we should fetch this from the transform *)
-                  let ctm = Math.Mat4.id in
-                  let normal_matrix =
-                    Math.Mat3.inv (Math.Mat3.transpose Math.Mat3.id)
+                  let transform =
+                    match t_opt with
+                    | Some t -> Transform.compute_matrix t
+                    | None -> Math.Mat4.id
                   in
-                  load_matrix4fv ctm pid "modelMatrix";
+
+                  let normal_matrix =
+                    Math.Mat3.inv
+                      (Math.Mat3.transpose (Math.Mat3.of_m4 transform))
+                  in
+                  load_matrix4fv transform pid "modelMatrix";
                   load_matrix3fv normal_matrix pid "normalMatrix";
 
                   Mesh3d.draw mesh3d)
@@ -66,10 +71,13 @@ let shade3d = function
         entities
         |> List.iter (fun (_, components) ->
                match components with
-               | [ m; s ] ->
+               | [ m; s; t_opt ] ->
                    let m = m |> Ecs.Component.unpack (module Mesh3d.C) in
                    let s = s |> Ecs.Component.unpack (module Shader.C) in
-                   render_entity m s
+                   let t_opt =
+                     t_opt |> Ecs.Component.unpack_opt (module Transform.C)
+                   in
+                   render_entity m s t_opt
                | _ -> assert false)
       in
       cameras
@@ -132,7 +140,11 @@ let plugin w =
     [|
       Ecs.Query.create [ Ecs.Query.Required Camera.Dim3.C.id ];
       Ecs.Query.create
-        [ Ecs.Query.Required Mesh3d.C.id; Ecs.Query.Required Shader.C.id ];
+        [
+          Ecs.Query.Required Mesh3d.C.id;
+          Ecs.Query.Required Shader.C.id;
+          Ecs.Query.Optional Transform.C.id;
+        ];
     |]
     (Ecs.System.Query shade3d);
 

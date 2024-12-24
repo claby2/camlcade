@@ -21,3 +21,9 @@ module Mat4 : sig
 
   val to_list : t -> float list
 end
+
+module Quat : sig
+  include module type of Gg.Quat
+
+  val to_axes : t -> Vec4.t * Vec4.t * Vec4.t
+end

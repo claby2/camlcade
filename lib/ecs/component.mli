@@ -13,12 +13,6 @@ module Make (B : sig
   type inner
 end) : S with type t = B.inner
 
-module Transform : sig
-  type t = Math.Vec3.t
-
-  module C : S with type t = t
-end
-
 module None : sig
   type t = unit
 

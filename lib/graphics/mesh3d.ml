@@ -7,10 +7,10 @@ type t = {
   mutable vbo : int option;
 }
 
-let from_vertex_mesh mesh = { mesh; vao = None; vbo = None }
+let of_vertex_mesh mesh = { mesh; vao = None; vbo = None }
 
-let from_primitive primitive =
-  Vertex_mesh.of_primitive primitive |> from_vertex_mesh
+let of_primitive primitive =
+  Vertex_mesh.of_primitive primitive |> of_vertex_mesh
 
 let vertex_mesh t = t.mesh
 
