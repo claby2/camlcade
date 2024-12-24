@@ -9,7 +9,11 @@ val entities : t -> Id.Entity.t list
 
 (* Components *)
 val add_component : t -> Component.packed -> Id.Entity.t -> unit
-val with_component : t -> Component.packed -> Id.Entity.t -> Id.Entity.t
+
+val with_component :
+  'a.
+  t -> (module Component.S with type t = 'a) -> 'a -> Id.Entity.t -> Id.Entity.t
+
 val remove_component : t -> Id.Component.t -> Id.Entity.t -> unit
 
 val get_component :

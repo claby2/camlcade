@@ -118,8 +118,7 @@ let cleanup w = function
 let plugin w =
   let add_context w =
     Ecs.World.add_entity w
-    |> Ecs.World.with_component w
-         (Ecs.Component.pack (module Context.C) (Context.empty ()))
+    |> Ecs.World.with_component w (module Context.C) (Context.empty ())
     |> ignore
   in
   add_context w;

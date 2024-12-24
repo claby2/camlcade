@@ -27,21 +27,20 @@ let t2 =
       let world = World.create () in
       let entity =
         World.add_entity world
-        |> World.with_component world (Component.pack (module Foo.C) ())
-        |> World.with_component world (Component.pack (module Bar.C) ())
+        |> World.with_component world (module Foo.C) ()
+        |> World.with_component world (module Bar.C) ()
       in
       for _ = 1 to 50 do
         World.remove_component world Foo.C.id entity;
-        World.with_component world (Component.pack (module Foo.C) ()) entity
-        |> ignore
+        World.with_component world (module Foo.C) () entity |> ignore
       done)
 
 let big_world =
   let world = World.create () in
   for _ = 1 to 500 do
     World.add_entity world
-    |> World.with_component world (Component.pack (module Foo.C) ())
-    |> World.with_component world (Component.pack (module Bar.C) ())
+    |> World.with_component world (module Foo.C) ()
+    |> World.with_component world (module Bar.C) ()
     |> ignore
   done;
   world

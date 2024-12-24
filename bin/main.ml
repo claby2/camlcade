@@ -24,22 +24,20 @@ let plugin w =
   let _camera =
     Ecs.World.add_entity w
     |> Ecs.World.with_component w
-         (Ecs.Component.pack
-            (module Graphics.Camera.Dim3.C)
-            (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.) ()))
+         (module Graphics.Camera.Dim3.C)
+         (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.) ())
   in
   let _sphere =
     Ecs.World.add_entity w
     |> Ecs.World.with_component w
-         (Ecs.Component.pack
-            (module Graphics.Mesh3d.C)
-            (Graphics.Mesh3d.of_primitive
-               (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ())))
+         (module Graphics.Mesh3d.C)
+         (Graphics.Mesh3d.of_primitive
+            (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ()))
+    |> Ecs.World.with_component w (module Transform.C) (Transform.identity ())
     |> Ecs.World.with_component w
-         (Ecs.Component.pack (module Transform.C) (Transform.identity ()))
-    |> Ecs.World.with_component w
-         (Ecs.Component.pack (module Graphics.Shader.C) Graphics.Shader.phong)
-    |> Ecs.World.with_component w (Ecs.Component.pack (module Ball.C) ())
+         (module Graphics.Shader.C)
+         Graphics.Shader.phong
+    |> Ecs.World.with_component w (module Ball.C) ()
   in
 
   Ecs.World.add_system w Ecs.Scheduler.Update

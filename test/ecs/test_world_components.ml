@@ -5,9 +5,9 @@ let test_with_component () =
   let w = World.create () in
   let e =
     World.add_entity w
-    |> World.with_component w (Component.pack (module Foo.C) (ref 2))
-    |> World.with_component w (Component.pack (module Bar.C) (ref 1))
-    |> World.with_component w (Component.pack (module Foo.C) (ref 0))
+    |> World.with_component w (module Foo.C) (ref 2)
+    |> World.with_component w (module Bar.C) (ref 1)
+    |> World.with_component w (module Foo.C) (ref 0)
   in
   let e_components = World.get_component w e in
   (match (e_components Foo.C.id, e_components Bar.C.id) with
@@ -25,15 +25,15 @@ let test_diabolical_graph () =
   (* e1 creates archetype graph [] -> [Foo] -> [Foo, Bar] -> [Foo, Bar, Baz] *)
   let e1 =
     World.add_entity w
-    |> World.with_component w (Component.pack (module Foo.C) (ref 0))
-    |> World.with_component w (Component.pack (module Bar.C) (ref 0))
-    |> World.with_component w (Component.pack (module Baz.C) (ref 0))
+    |> World.with_component w (module Foo.C) (ref 0)
+    |> World.with_component w (module Bar.C) (ref 0)
+    |> World.with_component w (module Baz.C) (ref 0)
   in
   (* e2 creates archetype graph [] -> [Bar] -> [Bar, Baz] *)
   let e2 =
     World.add_entity w
-    |> World.with_component w (Component.pack (module Bar.C) (ref 0))
-    |> World.with_component w (Component.pack (module Baz.C) (ref 0))
+    |> World.with_component w (module Bar.C) (ref 0)
+    |> World.with_component w (module Baz.C) (ref 0)
   in
 
   (* When Foo is removed, the world will attempt to traverse the archetype graph

@@ -4,8 +4,7 @@ open Ecs
 let test_simple () =
   let w = World.create () in
   let e =
-    World.add_entity w
-    |> World.with_component w (Component.pack (module Foo.C) (ref 42))
+    World.add_entity w |> World.with_component w (module Foo.C) (ref 42)
   in
 
   let value = ref None in
@@ -27,10 +26,7 @@ let test_simple () =
 
 let test_order () =
   let w = World.create () in
-  let e =
-    World.add_entity w
-    |> World.with_component w (Component.pack (module Foo.C) (ref 0))
-  in
+  let e = World.add_entity w |> World.with_component w (module Foo.C) (ref 0) in
 
   let set_system n = function
     | [| [ (_, [ foo ]) ] |] ->
@@ -64,9 +60,8 @@ let test_complex () =
   let entities =
     List.init 10 (fun v ->
         World.add_entity w
-        |> World.with_component w (Component.pack (module Foo.C) (ref v))
-        |> World.with_component w
-             (Component.pack (module Name.C) (ref "placeholder")))
+        |> World.with_component w (module Foo.C) (ref v)
+        |> World.with_component w (module Name.C) (ref "placeholder"))
   in
 
   let update_entities : Query.Result.t array -> unit = function
@@ -124,7 +119,7 @@ let test_immediate () =
   let w = World.create () in
   let original_entity =
     World.add_entity w
-    |> World.with_component w (Component.pack (module Name.C) (ref "whatever"))
+    |> World.with_component w (module Name.C) (ref "whatever")
   in
 
   assert (List.length (World.entities w) = 1);

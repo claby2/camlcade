@@ -82,8 +82,11 @@ let add_component w component entity =
          in
          Hashtbl.replace w.component_index c new_archetype_set)
 
-let with_component w component entity =
-  add_component w component entity;
+let with_component : type a.
+    t -> (module Component.S with type t = a) -> a -> Id.Entity.t -> Id.Entity.t
+    =
+ fun w (module C) component entity ->
+  add_component w (Component.pack (module C) component) entity;
   entity
 
 (* Remove a component from an entity *)
