@@ -10,10 +10,11 @@ module type S = sig
 end
 
 module Make (B : sig
-  type t
-end) : S with type t = B.t = struct
+  type inner
+end) : S with type t = B.inner = struct
   include B
 
+  type t = inner
   type base += T of t
 
   let id = Id.Component.next ()
@@ -23,21 +24,21 @@ end) : S with type t = B.t = struct
 end
 
 module Transform = struct
-  module T = struct
-    type t = Math.Vec3.t
-  end
+  type t = Math.Vec3.t
 
-  module C = Make (T)
+  module C = Make (struct
+    type inner = t
+  end)
 end
 
 (* A component that doesn't have any data.
    Mainly used for optional components in a query result *)
 module None = struct
-  module T = struct
-    type t = unit
-  end
+  type t = unit
 
-  module C = Make (T)
+  module C = Make (struct
+    type inner = t
+  end)
 end
 
 type packed = Packed : (module S with type t = 'a) * 'a -> packed

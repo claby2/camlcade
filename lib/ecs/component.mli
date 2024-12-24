@@ -9,24 +9,20 @@ module type S = sig
   val to_base : t -> base
 end
 
-module Make (Base : sig
-  type t
-end) : S with type t = Base.t
+module Make (B : sig
+  type inner
+end) : S with type t = B.inner
 
 module Transform : sig
-  module T : sig
-    type t = Math.Vec3.t
-  end
+  type t = Math.Vec3.t
 
-  module C : S with type t = T.t
+  module C : S with type t = t
 end
 
 module None : sig
-  module T : sig
-    type t = unit
-  end
+  type t = unit
 
-  module C : S with type t = T.t
+  module C : S with type t = t
 end
 
 type packed

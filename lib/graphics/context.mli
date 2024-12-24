@@ -1,10 +1,8 @@
-module T : sig
-  type t
+type t
 
-  val empty : unit -> t
-  val initialize : gl:int * int -> t -> unit
-  val render : t -> unit
-  val destroy : t -> unit
-end
+val empty : unit -> t
+val initialize : gl:int * int -> t -> unit
+val render : t -> unit
+val destroy : t -> unit
 
-module C : Ecs.Component.S with type t = T.t
+module C : Ecs.Component.S with type t = t

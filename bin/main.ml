@@ -1,11 +1,11 @@
 open Camlcade
 
 module Ball = struct
-  module T = struct
-    type t = unit
-  end
+  type t = unit
 
-  module C = Ecs.Component.Make (T)
+  module C = Ecs.Component.Make (struct
+    type inner = t
+  end)
 end
 
 let move_ball =
@@ -21,21 +21,21 @@ let () =
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Camera.Dim3.C)
-                     (Graphics.Camera.Dim3.T.create
-                        ~pos:(Math.Vec3.make 3. 3. 3.) ()))
+                     (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.make 3. 3. 3.)
+                        ()))
            in
            let _sphere =
              Ecs.World.add_entity w
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Mesh3d.C)
-                     (Graphics.Mesh3d.T.from_primitive
+                     (Graphics.Mesh3d.from_primitive
                         (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10
                            ())))
              |> Ecs.World.with_component w
                   (Ecs.Component.pack
                      (module Graphics.Shader.C)
-                     Graphics.Shader.T.phong)
+                     Graphics.Shader.phong)
              |> Ecs.World.with_component w
                   (Ecs.Component.pack (module Ball.C) ())
            in

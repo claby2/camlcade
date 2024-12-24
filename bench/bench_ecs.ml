@@ -2,19 +2,19 @@ open Core_bench
 open Ecs
 
 module Foo = struct
-  module T = struct
-    type t = unit
-  end
+  type t = unit
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end
 
 module Bar = struct
-  module T = struct
-    type t = unit
-  end
+  type t = unit
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end
 
 let t1 =

@@ -1,33 +1,33 @@
 open Ecs
 
 module Foo = struct
-  module T = struct
-    type t = int ref
-  end
+  type t = int ref
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end
 
 module Bar = struct
-  module T = struct
-    type t = int ref
-  end
+  type t = int ref
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end
 
 module Baz = struct
-  module T = struct
-    type t = int ref
-  end
+  type t = int ref
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end
 
 module Name = struct
-  module T = struct
-    type t = string ref
-  end
+  type t = string ref
 
-  module C = Component.Make (T)
+  module C = Component.Make (struct
+    type inner = t
+  end)
 end

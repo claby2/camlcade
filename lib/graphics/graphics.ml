@@ -10,11 +10,11 @@ module Primitive = Primitive
 let initialize ~gl = function
   | [| [ (_, [ context ]) ]; shaders; meshes3d |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in
-      Context.T.initialize ~gl context;
+      Context.initialize ~gl context;
 
       let initialize_shader shader =
         let shader = shader |> Ecs.Component.unpack |> Shader.C.of_base in
-        Shader.T.initialize shader
+        Shader.initialize shader
       in
       shaders
       |> List.iter (fun (_, s) ->
@@ -22,9 +22,9 @@ let initialize ~gl = function
 
       let initialize_mesh3d mesh3d =
         let mesh3d = mesh3d |> Ecs.Component.unpack |> Mesh3d.C.of_base in
-        Mesh3d.T.initialize mesh3d;
+        Mesh3d.initialize mesh3d;
         (* TODO: Is this the right place to install VBOs? *)
-        Mesh3d.T.install_vbo mesh3d
+        Mesh3d.install_vbo mesh3d
       in
       meshes3d
       |> List.iter (fun (_, m) ->
@@ -34,7 +34,7 @@ let initialize ~gl = function
 let render = function
   | [| [ (_, [ context ]) ] |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in
-      Context.T.render context
+      Context.render context
   | _ -> assert false
 
 let shade3d = function
@@ -44,13 +44,12 @@ let shade3d = function
       Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
       let render_to_camera c =
         let render_entity mesh3d shader =
-          match Shader.T.tag_opt shader with
+          match Shader.tag_opt shader with
           | Some Shader.Phong ->
-              Shader.T.with_shader shader (fun pid ->
-                  load_matrix4fv (Camera.Dim3.T.view c) pid "viewMatrix";
-                  load_matrix4fv
-                    (Camera.Dim3.T.projection c)
-                    pid "projectionMatrix";
+              Shader.with_shader shader (fun pid ->
+                  load_matrix4fv (Camera.Dim3.view c) pid "viewMatrix";
+                  load_matrix4fv (Camera.Dim3.projection c) pid
+                    "projectionMatrix";
 
                   (* TODO: This ctm is currently hardcoded, we should fetch this from the transform *)
                   let ctm = Math.Mat4.identity in
@@ -60,7 +59,7 @@ let shade3d = function
                   load_matrix4fv ctm pid "modelMatrix";
                   load_matrix3fv normal_matrix pid "normalMatrix";
 
-                  Mesh3d.T.draw mesh3d)
+                  Mesh3d.draw mesh3d)
           | _ -> ()
         in
 
@@ -86,12 +85,12 @@ let shade3d = function
 let cleanup w = function
   | [| [ (context_entity, [ context ]) ]; shaders; meshes3d |] ->
       let context = context |> Ecs.Component.unpack |> Context.C.of_base in
-      Context.T.destroy context;
+      Context.destroy context;
       Ecs.World.remove_entity w context_entity;
 
       let destroy_shader entity shader =
         let shader = shader |> Ecs.Component.unpack |> Shader.C.of_base in
-        Shader.T.destroy shader;
+        Shader.destroy shader;
         Ecs.World.remove_entity w entity
       in
       shaders
@@ -105,7 +104,7 @@ let cleanup w = function
                  let mesh3d =
                    mesh3d |> Ecs.Component.unpack |> Mesh3d.C.of_base
                  in
-                 Mesh3d.T.destroy mesh3d
+                 Mesh3d.destroy mesh3d
              | _ -> assert false)
   | _ -> assert false
 
@@ -113,7 +112,7 @@ let plugin w =
   let add_context w =
     Ecs.World.add_entity w
     |> Ecs.World.with_component w
-         (Ecs.Component.pack (module Context.C) (Context.T.empty ()))
+         (Ecs.Component.pack (module Context.C) (Context.empty ()))
     |> ignore
   in
   add_context w;
