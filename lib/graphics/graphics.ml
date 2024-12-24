@@ -9,11 +9,11 @@ module Primitive = Primitive
 
 let initialize ~gl = function
   | [| [ (_, [ context ]) ]; shaders; meshes3d |] ->
-      let context = context |> Ecs.Component.unpack |> Context.C.of_base in
+      let context = context |> Ecs.Component.unpack (module Context.C) in
       Context.initialize ~gl context;
 
       let initialize_shader shader =
-        let shader = shader |> Ecs.Component.unpack |> Shader.C.of_base in
+        let shader = shader |> Ecs.Component.unpack (module Shader.C) in
         Shader.initialize shader
       in
       shaders
@@ -21,7 +21,7 @@ let initialize ~gl = function
              match s with [ s ] -> initialize_shader s | _ -> assert false);
 
       let initialize_mesh3d mesh3d =
-        let mesh3d = mesh3d |> Ecs.Component.unpack |> Mesh3d.C.of_base in
+        let mesh3d = mesh3d |> Ecs.Component.unpack (module Mesh3d.C) in
         Mesh3d.initialize mesh3d;
         (* TODO: Is this the right place to install VBOs? *)
         Mesh3d.install_vbo mesh3d
@@ -33,7 +33,7 @@ let initialize ~gl = function
 
 let render = function
   | [| [ (_, [ context ]) ] |] ->
-      let context = context |> Ecs.Component.unpack |> Context.C.of_base in
+      let context = context |> Ecs.Component.unpack (module Context.C) in
       Context.render context
   | _ -> assert false
 
@@ -68,8 +68,8 @@ let shade3d = function
         |> List.iter (fun (_, components) ->
                match components with
                | [ m; s ] ->
-                   let m = m |> Ecs.Component.unpack |> Mesh3d.C.of_base in
-                   let s = s |> Ecs.Component.unpack |> Shader.C.of_base in
+                   let m = m |> Ecs.Component.unpack (module Mesh3d.C) in
+                   let s = s |> Ecs.Component.unpack (module Shader.C) in
                    render_entity m s
                | _ -> assert false)
       in
@@ -77,19 +77,19 @@ let shade3d = function
       |> List.iter (fun (_, c) ->
              match c with
              | [ c ] ->
-                 let c = c |> Ecs.Component.unpack |> Camera.Dim3.C.of_base in
+                 let c = c |> Ecs.Component.unpack (module Camera.Dim3.C) in
                  render_to_camera c
              | _ -> assert false)
   | _ -> assert false
 
 let cleanup w = function
   | [| [ (context_entity, [ context ]) ]; shaders; meshes3d |] ->
-      let context = context |> Ecs.Component.unpack |> Context.C.of_base in
+      let context = context |> Ecs.Component.unpack (module Context.C) in
       Context.destroy context;
       Ecs.World.remove_entity w context_entity;
 
       let destroy_shader entity shader =
-        let shader = shader |> Ecs.Component.unpack |> Shader.C.of_base in
+        let shader = shader |> Ecs.Component.unpack (module Shader.C) in
         Shader.destroy shader;
         Ecs.World.remove_entity w entity
       in
@@ -102,7 +102,7 @@ let cleanup w = function
              match components with
              | [ mesh3d ] ->
                  let mesh3d =
-                   mesh3d |> Ecs.Component.unpack |> Mesh3d.C.of_base
+                   mesh3d |> Ecs.Component.unpack (module Mesh3d.C)
                  in
                  Mesh3d.destroy mesh3d
              | _ -> assert false)

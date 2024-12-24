@@ -51,11 +51,13 @@ let test_add_entity () =
 
   let foo_value e =
     !(Archetype.get_component a e Foo.C.id
-     |> Option.get |> Component.unpack |> Foo.C.of_base)
+     |> Option.get
+     |> Component.unpack (module Foo.C))
   in
   let bar_value e =
     !(Archetype.get_component a e Bar.C.id
-     |> Option.get |> Component.unpack |> Bar.C.of_base)
+     |> Option.get
+     |> Component.unpack (module Bar.C))
   in
 
   Archetype.add_entity a e

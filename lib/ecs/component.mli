@@ -28,5 +28,6 @@ end
 type packed
 
 val pack : 'a. (module S with type t = 'a) -> 'a -> packed
-val unpack : packed -> base
+val unpack : 'a. (module S with type t = 'a) -> packed -> 'a
+val unpack_opt : 'a. (module S with type t = 'a) -> packed -> 'a option
 val id : packed -> Id.Component.t

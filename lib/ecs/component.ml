@@ -46,7 +46,11 @@ type packed = Packed : (module S with type t = 'a) * 'a -> packed
 let pack : type a. (module S with type t = a) -> a -> packed =
  fun component value -> Packed (component, value)
 
-let unpack : packed -> base = function
-  | Packed ((module C), value) -> C.to_base value
+let unpack : type a. (module S with type t = a) -> packed -> a =
+ fun (module C) (Packed ((module C'), value)) -> C.of_base (C'.to_base value)
+
+let unpack_opt : type a. (module S with type t = a) -> packed -> a option =
+ fun (module C) (Packed ((module C'), value)) ->
+  C.of_base_opt (C'.to_base value)
 
 let id : packed -> Id.Component.t = function Packed ((module C), _) -> C.id

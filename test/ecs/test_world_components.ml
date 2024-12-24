@@ -12,9 +12,9 @@ let test_with_component () =
   let e_components = World.get_component w e in
   (match (e_components Foo.C.id, e_components Bar.C.id) with
   | Some foo, Some bar ->
-      let foo = foo |> Component.unpack |> Foo.C.of_base in
+      let foo = foo |> Component.unpack (module Foo.C) in
       assert (!foo = 0);
-      let bar = bar |> Component.unpack |> Bar.C.of_base in
+      let bar = bar |> Component.unpack (module Bar.C) in
       assert (!bar = 1)
   | _ -> assert false);
 

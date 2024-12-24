@@ -12,7 +12,7 @@ let test_simple () =
   let simple = function
     | [| [ (e', [ foo ]) ] |] ->
         assert (e' == e);
-        let foo = foo |> Component.unpack |> Foo.C.of_base in
+        let foo = foo |> Component.unpack (module Foo.C) in
         value := Some !foo
     | _ -> assert false
   in
@@ -34,7 +34,7 @@ let test_order () =
 
   let set_system n = function
     | [| [ (_, [ foo ]) ] |] ->
-        let foo = foo |> Component.unpack |> Foo.C.of_base in
+        let foo = foo |> Component.unpack (module Foo.C) in
         foo := n
     | _ -> assert false
   in
@@ -54,7 +54,8 @@ let test_order () =
 
   let foo =
     World.get_component w e Foo.C.id
-    |> Option.get |> Component.unpack |> Foo.C.of_base
+    |> Option.get
+    |> Component.unpack (module Foo.C)
   in
   assert (!foo = 1)
 
@@ -73,18 +74,17 @@ let test_complex () =
         r1
         |> List.iter (function
              | e, [ foo; name; baz ] ->
-                 let foo = foo |> Component.unpack |> Foo.C.of_base in
-                 let name = name |> Component.unpack |> Name.C.of_base in
+                 let foo = foo |> Component.unpack (module Foo.C) in
+                 let name = name |> Component.unpack (module Name.C) in
                  foo := Id.Entity.to_int e;
                  name := string_of_int (Id.Entity.to_int e);
                  assert (
-                   baz |> Component.unpack |> Baz.C.of_base_opt
-                   |> Option.is_none)
+                   baz |> Component.unpack_opt (module Baz.C) |> Option.is_none)
              | _ -> assert false);
         let baz_is_none = function
           | _, [ baz ] ->
               assert (
-                baz |> Component.unpack |> Baz.C.of_base_opt |> Option.is_none)
+                baz |> Component.unpack_opt (module Baz.C) |> Option.is_none)
           | _ -> assert false
         in
         r2 |> List.iter baz_is_none
@@ -109,12 +109,14 @@ let test_complex () =
   |> List.iter (fun e ->
          let foo =
            World.get_component w e Foo.C.id
-           |> Option.get |> Component.unpack |> Foo.C.of_base
+           |> Option.get
+           |> Component.unpack (module Foo.C)
          in
          assert (!foo = Id.Entity.to_int e);
          let name =
            World.get_component w e Name.C.id
-           |> Option.get |> Component.unpack |> Name.C.of_base
+           |> Option.get
+           |> Component.unpack (module Name.C)
          in
          assert (int_of_string !name = Id.Entity.to_int e))
 
