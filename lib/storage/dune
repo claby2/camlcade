@@ -1,0 +1,3 @@
+(library
+  (name storage)
+  (libraries containers))
