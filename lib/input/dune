@@ -1,0 +1,3 @@
+(library
+  (name input)
+  (libraries ecs tsdl))

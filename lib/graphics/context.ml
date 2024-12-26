@@ -2,7 +2,7 @@ open Tsdl
 open Tgl4
 open Util
 
-type data = { win : Sdl.window; ctx : Sdl.gl_context; event : Sdl.event }
+type data = { win : Sdl.window; ctx : Sdl.gl_context }
 type t = data option ref
 
 let empty () = ref None
@@ -28,37 +28,23 @@ let initialize ~gl t =
         Sdl.init Sdl.Init.video >>= fun () ->
         create_window ~gl >>= fun (win, ctx) -> (win, ctx)
       in
+      let _event = Sdl.Event.create () in
 
       Gl.enable Gl.depth_test;
       Gl.cull_face Gl.back;
 
-      let event = Sdl.Event.create () in
-      t := Some { win; ctx; event }
+      t := Some { win; ctx }
   | Some _ -> ()
 
-let render t =
+let get_window_size t =
   match !t with
-  | None -> ()
-  | Some { event; win; _ } ->
-      Sdl.gl_swap_window win;
-      let key_scancode e =
-        Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
-      in
-      let window_event e =
-        Sdl.Event.(window_event_enum (get e window_event_id))
-      in
-      while Sdl.poll_event (Some event) do
-        match Sdl.Event.(enum (get event typ)) with
-        | `Quit -> raise Ecs.World.Quit
-        | `Key_down when key_scancode event = `Escape -> raise Ecs.World.Quit
-        | `Window_event -> (
-            match window_event event with
-            | `Exposed | `Resized ->
-                let w, h = Sdl.get_window_size win in
-                Gl.viewport 0 0 w h
-            | _ -> ())
-        | _ -> ()
-      done
+  | None -> invalid_arg "Context.get_window_size"
+  | Some { win; _ } ->
+      let w, h = Sdl.get_window_size win in
+      (w, h)
+
+let render t =
+  match !t with None -> () | Some { win; _ } -> Sdl.gl_swap_window win
 
 let destroy t =
   match !t with

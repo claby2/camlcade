@@ -1,3 +1,3 @@
 (library
  (name camlcade)
- (libraries ecs math graphics))
+ (libraries ecs math graphics input))

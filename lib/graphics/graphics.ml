@@ -1,5 +1,6 @@
 open Util
 open Tgl4
+open Tsdl
 module Camera = Camera
 module Mesh3d = Mesh3d
 module Shader = Shader
@@ -135,6 +136,37 @@ let plugin w =
     [| Ecs.Query.create [ Ecs.Query.Required Context.C.id ] |]
     (Ecs.System.Query render);
 
+  Ecs.World.add_system w Ecs.Scheduler.Update
+    [|
+      Ecs.Query.create [ Ecs.Query.Required Context.C.id ];
+      Ecs.Query.create [ Ecs.Query.Required Input.State.Window_events.C.id ];
+    |]
+    (Ecs.System.Query
+       (function
+       | [| [ (_, [ context ]) ]; [ (_, [ window_events ]) ] |] ->
+           let context = context |> Ecs.Component.unpack (module Context.C) in
+           let window_events =
+             window_events
+             |> Ecs.Component.unpack (module Input.State.Window_events.C)
+           in
+           Input.State.Window_events.iter window_events (function
+             | `Exposed | `Resized ->
+                 let w, h = Context.get_window_size context in
+                 Gl.viewport 0 0 w h
+             | _ -> ())
+       | _ ->
+           let _key_scancode e =
+             Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
+           in
+           let _window_event e =
+             Sdl.Event.(window_event_enum (get e window_event_id))
+           in
+           let event = Sdl.Event.create () in
+           while Sdl.poll_event (Some event) do
+             match Sdl.Event.(enum (get event typ)) with
+             | `Quit -> raise Ecs.World.Quit
+             | _ -> ()
+           done));
   Ecs.World.add_system w Ecs.Scheduler.Update
     [|
       Ecs.Query.create [ Ecs.Query.Required Camera.Dim3.C.id ];

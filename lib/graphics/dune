@@ -1,4 +1,4 @@
 (include_subdirs qualified)
 (library
   (name graphics)
-  (libraries ecs transform tsdl tgls.tgl4))
+  (libraries ecs transform input tsdl tgls.tgl4))
