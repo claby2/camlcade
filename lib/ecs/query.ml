@@ -23,6 +23,19 @@ end
 
 module Result = struct
   type t = (Id.Entity.t * Component.packed list) list
+
+  let entity_single r =
+    match r with
+    | [ (entity, components) ] -> Some (entity, components)
+    | _ -> None
+
+  let single r =
+    match entity_single r with
+    | Some (_, components) -> Some components
+    | None -> None
+
+  let entity_iter r f = List.iter f r
+  let iter r f = List.iter (fun (_, components) -> f components) r
 end
 
 type term = Required of Id.Component.t | Optional of Id.Component.t

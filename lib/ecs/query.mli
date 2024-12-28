@@ -12,6 +12,11 @@ end
 
 module Result : sig
   type t = (Id.Entity.t * Component.packed list) list
+
+  val entity_single : t -> (Id.Entity.t * Component.packed list) option
+  val single : t -> Component.packed list option
+  val entity_iter : t -> (Id.Entity.t * Component.packed list -> unit) -> unit
+  val iter : t -> (Component.packed list -> unit) -> unit
 end
 
 type term = Required of Id.Component.t | Optional of Id.Component.t

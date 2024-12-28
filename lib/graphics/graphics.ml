@@ -7,35 +7,42 @@ module Shader = Shader
 module Vertex_mesh = Vertex_mesh
 module Primitive = Primitive
 
-let initialize ~gl = function
-  | [| [ (_, [ context ]) ]; shaders; meshes3d |] ->
-      let context = context |> Ecs.Component.unpack (module Context.C) in
-      Context.initialize ~gl context;
+let initialize ~gl =
+  Ecs.System.Query
+    (function
+    | [| context; shaders; meshes3d |] ->
+        (* Initialize context *)
+        (match Ecs.Query.Result.single context with
+        | Some [ context ] ->
+            let context = context |> Ecs.Component.unpack (module Context.C) in
+            Context.initialize ~gl context
+        | _ -> assert false);
+        (* Initialize shaders *)
+        Ecs.Query.Result.iter shaders (function
+          | [ shader ] ->
+              let shader = shader |> Ecs.Component.unpack (module Shader.C) in
+              Shader.initialize shader
+          | _ -> assert false);
+        (* Initialize and install 3d meshes *)
+        Ecs.Query.Result.iter meshes3d (function
+          | [ mesh3d ] ->
+              let mesh3d = mesh3d |> Ecs.Component.unpack (module Mesh3d.C) in
+              Mesh3d.initialize mesh3d;
+              (* TODO: Is this the right place to install VBOs? *)
+              Mesh3d.install_vbo mesh3d
+          | _ -> assert false)
+    | _ -> assert false)
 
-      let initialize_shader shader =
-        let shader = shader |> Ecs.Component.unpack (module Shader.C) in
-        Shader.initialize shader
-      in
-      shaders
-      |> List.iter (fun (_, s) ->
-             match s with [ s ] -> initialize_shader s | _ -> assert false);
-
-      let initialize_mesh3d mesh3d =
-        let mesh3d = mesh3d |> Ecs.Component.unpack (module Mesh3d.C) in
-        Mesh3d.initialize mesh3d;
-        (* TODO: Is this the right place to install VBOs? *)
-        Mesh3d.install_vbo mesh3d
-      in
-      meshes3d
-      |> List.iter (fun (_, m) ->
-             match m with [ m ] -> initialize_mesh3d m | _ -> assert false)
-  | _ -> assert false
-
-let render = function
-  | [| [ (_, [ context ]) ] |] ->
-      let context = context |> Ecs.Component.unpack (module Context.C) in
-      Context.render context
-  | _ -> assert false
+let render =
+  Ecs.System.Query
+    (function
+    | [| context |] -> (
+        match Ecs.Query.Result.single context with
+        | Some [ context ] ->
+            let context = context |> Ecs.Component.unpack (module Context.C) in
+            Context.render context
+        | _ -> assert false)
+    | _ -> assert false)
 
 let shade3d = function
   | [| cameras; entities |] ->
@@ -69,52 +76,51 @@ let shade3d = function
         in
 
         (* TODO: Collect all entities that use the phong shader *)
-        entities
-        |> List.iter (fun (_, components) ->
-               match components with
-               | [ m; s; t_opt ] ->
-                   let m = m |> Ecs.Component.unpack (module Mesh3d.C) in
-                   let s = s |> Ecs.Component.unpack (module Shader.C) in
-                   let t_opt =
-                     t_opt |> Ecs.Component.unpack_opt (module Transform.C)
-                   in
-                   render_entity m s t_opt
-               | _ -> assert false)
+        Ecs.Query.Result.iter entities (function
+          | [ mesh3d; shader; transform_opt ] ->
+              let mesh3d = mesh3d |> Ecs.Component.unpack (module Mesh3d.C) in
+              let shader = shader |> Ecs.Component.unpack (module Shader.C) in
+              let transform_opt =
+                transform_opt |> Ecs.Component.unpack_opt (module Transform.C)
+              in
+              render_entity mesh3d shader transform_opt
+          | _ -> assert false)
       in
-      cameras
-      |> List.iter (fun (_, c) ->
-             match c with
-             | [ c ] ->
-                 let c = c |> Ecs.Component.unpack (module Camera.Dim3.C) in
-                 render_to_camera c
-             | _ -> assert false)
+      Ecs.Query.Result.iter cameras (function
+        | [ camera ] ->
+            let camera =
+              camera |> Ecs.Component.unpack (module Camera.Dim3.C)
+            in
+            render_to_camera camera
+        | _ -> assert false)
   | _ -> assert false
 
-let cleanup w = function
-  | [| [ (context_entity, [ context ]) ]; shaders; meshes3d |] ->
-      let context = context |> Ecs.Component.unpack (module Context.C) in
-      Context.destroy context;
-      Ecs.World.remove_entity w context_entity;
-
-      let destroy_shader entity shader =
-        let shader = shader |> Ecs.Component.unpack (module Shader.C) in
-        Shader.destroy shader;
-        Ecs.World.remove_entity w entity
-      in
-      shaders
-      |> List.iter (fun (e, s) ->
-             match s with [ s ] -> destroy_shader e s | _ -> assert false);
-
-      meshes3d
-      |> List.iter (fun (_, components) ->
-             match components with
-             | [ mesh3d ] ->
-                 let mesh3d =
-                   mesh3d |> Ecs.Component.unpack (module Mesh3d.C)
-                 in
-                 Mesh3d.destroy mesh3d
-             | _ -> assert false)
-  | _ -> assert false
+let cleanup =
+  Ecs.System.Immediate
+    (fun w -> function
+      | [| context; shaders; meshes3d |] ->
+          (* Cleanup context *)
+          (match Ecs.Query.Result.entity_single context with
+          | Some (context_entity, [ context ]) ->
+              let context =
+                context |> Ecs.Component.unpack (module Context.C)
+              in
+              Context.destroy context;
+              Ecs.World.remove_entity w context_entity
+          | _ -> assert false);
+          (* Destroy shaders *)
+          Ecs.Query.Result.iter shaders (function
+            | [ shader ] ->
+                let shader = shader |> Ecs.Component.unpack (module Shader.C) in
+                Shader.destroy shader
+            | _ -> assert false);
+          (* Destroy meshes *)
+          Ecs.Query.Result.iter meshes3d (function
+            | [ mesh3d ] ->
+                let mesh3d = mesh3d |> Ecs.Component.unpack (module Mesh3d.C) in
+                Mesh3d.destroy mesh3d
+            | _ -> assert false)
+      | _ -> assert false)
 
 let plugin w =
   let add_context w =
@@ -130,11 +136,11 @@ let plugin w =
       Ecs.Query.create [ Ecs.Query.Required Shader.C.id ];
       Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ];
     |]
-    (Ecs.System.Query (initialize ~gl:(4, 0)));
+    (initialize ~gl:(4, 0));
 
   Ecs.World.add_system w Ecs.Scheduler.Update
     [| Ecs.Query.create [ Ecs.Query.Required Context.C.id ] |]
-    (Ecs.System.Query render);
+    render;
 
   Ecs.World.add_system w Ecs.Scheduler.Update
     [|
@@ -185,4 +191,4 @@ let plugin w =
       Ecs.Query.create [ Ecs.Query.Required Shader.C.id ];
       Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ];
     |]
-    (Ecs.System.Immediate cleanup)
+    cleanup

@@ -11,16 +11,33 @@ end
 let move_ball =
   Ecs.System.Query
     (function
-    | [| [ (_, [ transform ]) ]; [ (_, [ keys ]) ] |] ->
-        let transform =
-          transform |> Ecs.Component.unpack (module Transform.C)
+    | [| transforms; keys |] ->
+        let keys =
+          match Ecs.Query.Result.single keys with
+          | Some [ keys ] ->
+              let keys =
+                keys |> Ecs.Component.unpack (module Input.State.Keys.C)
+              in
+              keys
+          | _ -> assert false
         in
-        let keys = keys |> Ecs.Component.unpack (module Input.State.Keys.C) in
-        let tx, ty, tz = Math.Vec3.to_tuple (Transform.translation transform) in
-        if Input.State.Keys.is_just_pressed keys `W then
-          Transform.set_translation transform (Math.Vec3.v tx ty (tz +. 0.001));
-        if Input.State.Keys.is_just_pressed keys `S then
-          Transform.set_translation transform (Math.Vec3.v tx ty (tz -. 0.001))
+        let w_pressed = Input.State.Keys.is_just_pressed keys `W in
+        let s_pressed = Input.State.Keys.is_just_pressed keys `S in
+        Ecs.Query.Result.iter transforms (function
+          | [ transform ] ->
+              let transform =
+                transform |> Ecs.Component.unpack (module Transform.C)
+              in
+              let tx, ty, tz =
+                Math.Vec3.to_tuple (Transform.translation transform)
+              in
+              if w_pressed then
+                Transform.set_translation transform
+                  (Math.Vec3.v tx ty (tz +. 0.001));
+              if s_pressed then
+                Transform.set_translation transform
+                  (Math.Vec3.v tx ty (tz -. 0.001))
+          | _ -> assert false)
     | _ -> assert false)
 
 let plugin w =
