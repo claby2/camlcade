@@ -1,37 +1,32 @@
 open Camlcade
+open Ecs
 
 module Ball = struct
   type t = unit
 
-  module C = Ecs.Component.Make (struct
+  module C = Component.Make (struct
     type inner = t
   end)
 end
 
 let move_ball =
-  Ecs.System.make
-    (fun querier ->
+  System.make
+    (fun q ->
       let transforms =
-        querier
-          (Ecs.Query.create ~filter:(Ecs.Query.Filter.With Ball.C.id)
-             [ Ecs.Query.Required Transform.C.id ])
+        q
+          (Query.create ~filter:(Query.Filter.With Ball.C.id)
+             [ Query.Required Transform.C.id ])
       in
-      let keys =
-        querier (Ecs.Query.create [ Ecs.Query.Required Input.State.Keys.C.id ])
-      in
+      let keys = q (Query.create [ Query.Required Input.State.Keys.C.id ]) in
       ( transforms
-        |> Ecs.Query.Result.filter_map (fun transforms ->
-               match transforms with
-               | [ transform ] ->
-                   Some (transform |> Ecs.Component.unpack (module Transform.C))
-               | _ -> assert false),
-        keys |> Ecs.Query.Result.single ))
-    (Ecs.System.Query
+        |> Query.Result.map (function
+             | [ t ] -> Component.unpack (module Transform.C) t
+             | _ -> assert false),
+        keys |> Query.Result.single ))
+    (System.Query
        (function
        | transforms, Some [ keys ] ->
-           let keys =
-             keys |> Ecs.Component.unpack (module Input.State.Keys.C)
-           in
+           let keys = keys |> Component.unpack (module Input.State.Keys.C) in
            let w_pressed = Input.State.Keys.is_just_pressed keys `W in
            let s_pressed = Input.State.Keys.is_just_pressed keys `S in
            List.iter
@@ -50,26 +45,24 @@ let move_ball =
 
 let plugin w =
   let _camera =
-    Ecs.World.add_entity w
-    |> Ecs.World.with_component w
+    World.add_entity w
+    |> World.with_component w
          (module Graphics.Camera.Dim3.C)
          (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.) ())
   in
   let add_ball w =
-    Ecs.World.add_entity w
-    |> Ecs.World.with_component w
+    World.add_entity w
+    |> World.with_component w
          (module Graphics.Mesh3d.C)
          (Graphics.Mesh3d.of_primitive
             (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ()))
-    |> Ecs.World.with_component w (module Transform.C) (Transform.identity ())
-    |> Ecs.World.with_component w
-         (module Graphics.Shader.C)
-         Graphics.Shader.phong
-    |> Ecs.World.with_component w (module Ball.C) ()
+    |> World.with_component w (module Transform.C) (Transform.identity ())
+    |> World.with_component w (module Graphics.Shader.C) Graphics.Shader.phong
+    |> World.with_component w (module Ball.C) ()
   in
   add_ball w |> ignore;
 
-  Ecs.World.add_system w Ecs.Scheduler.Update move_ball
+  World.add_system w Scheduler.Update move_ball
 
 let () =
   let app =
