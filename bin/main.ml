@@ -10,37 +10,36 @@ module Ball = struct
 end
 
 let move_ball =
-  System.make
-    (fun q ->
-      let transforms =
-        q
-          (Query.create ~filter:(Query.Filter.With Ball.C.id)
-             [ Query.Required Transform.C.id ])
-      in
-      let keys = q (Query.create [ Query.Required Input.State.Keys.C.id ]) in
-      ( transforms
-        |> Query.Result.map (function
-             | [ t ] -> Component.unpack (module Transform.C) t
-             | _ -> assert false),
-        keys |> Query.Result.single ))
+  let query q =
+    let transforms =
+      q
+        (Query.create ~filter:(Query.Filter.With Ball.C.id)
+           [ Query.Required Transform.C.id ])
+    in
+    let keys = q (Query.create [ Query.Required Input.State.Keys.C.id ]) in
+    ( transforms
+      |> Query.Result.map (function
+           | [ t ] -> Component.unpack (module Transform.C) t
+           | _ -> assert false),
+      keys |> Query.Result.single )
+  in
+  let move transforms keys =
+    let keys = keys |> Component.unpack (module Input.State.Keys.C) in
+    let w_pressed = Input.State.Keys.is_just_pressed keys `W in
+    let s_pressed = Input.State.Keys.is_just_pressed keys `S in
+    List.iter
+      (fun transform ->
+        let tx, ty, tz = Math.Vec3.to_tuple (Transform.translation transform) in
+        if w_pressed then
+          Transform.set_translation transform (Math.Vec3.v tx ty (tz +. 0.001));
+        if s_pressed then
+          Transform.set_translation transform (Math.Vec3.v tx ty (tz -. 0.001)))
+      transforms
+  in
+  System.make query
     (System.Query
        (function
-       | transforms, Some [ keys ] ->
-           let keys = keys |> Component.unpack (module Input.State.Keys.C) in
-           let w_pressed = Input.State.Keys.is_just_pressed keys `W in
-           let s_pressed = Input.State.Keys.is_just_pressed keys `S in
-           List.iter
-             (fun transform ->
-               let tx, ty, tz =
-                 Math.Vec3.to_tuple (Transform.translation transform)
-               in
-               if w_pressed then
-                 Transform.set_translation transform
-                   (Math.Vec3.v tx ty (tz +. 0.001));
-               if s_pressed then
-                 Transform.set_translation transform
-                   (Math.Vec3.v tx ty (tz -. 0.001)))
-             transforms
+       | transforms, Some [ keys ] -> move transforms keys
        | _ -> assert false))
 
 let plugin w =
