@@ -20,7 +20,7 @@ val get_component :
   t -> Id.Entity.t -> Id.Component.t -> Component.packed option
 
 (* Systems *)
-val add_system : t -> Scheduler.schedule -> Query.t array -> t System.t -> unit
+val add_system : t -> Scheduler.schedule -> t System.t -> unit
 val run_systems : t -> Scheduler.schedule -> unit
 
 exception Quit

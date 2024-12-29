@@ -9,36 +9,41 @@ module Ball = struct
 end
 
 let move_ball =
-  Ecs.System.Query
-    (function
-    | [| transforms; keys |] ->
-        let keys =
-          match Ecs.Query.Result.single keys with
-          | Some [ keys ] ->
-              let keys =
-                keys |> Ecs.Component.unpack (module Input.State.Keys.C)
-              in
-              keys
-          | _ -> assert false
-        in
-        let w_pressed = Input.State.Keys.is_just_pressed keys `W in
-        let s_pressed = Input.State.Keys.is_just_pressed keys `S in
-        Ecs.Query.Result.iter transforms (function
-          | [ transform ] ->
-              let transform =
-                transform |> Ecs.Component.unpack (module Transform.C)
-              in
-              let tx, ty, tz =
-                Math.Vec3.to_tuple (Transform.translation transform)
-              in
-              if w_pressed then
-                Transform.set_translation transform
-                  (Math.Vec3.v tx ty (tz +. 0.001));
-              if s_pressed then
-                Transform.set_translation transform
-                  (Math.Vec3.v tx ty (tz -. 0.001))
-          | _ -> assert false)
-    | _ -> assert false)
+  Ecs.System.make
+    (fun querier ->
+      let transforms =
+        querier
+          (Ecs.Query.create ~filter:(Ecs.Query.Filter.With Ball.C.id)
+             [ Ecs.Query.Required Transform.C.id ])
+      in
+      let keys =
+        querier (Ecs.Query.create [ Ecs.Query.Required Input.State.Keys.C.id ])
+      in
+      (transforms, keys |> Ecs.Query.Result.single))
+    (Ecs.System.Query
+       (function
+       | transforms, Some [ keys ] ->
+           let keys =
+             keys |> Ecs.Component.unpack (module Input.State.Keys.C)
+           in
+           let w_pressed = Input.State.Keys.is_just_pressed keys `W in
+           let s_pressed = Input.State.Keys.is_just_pressed keys `S in
+           Ecs.Query.Result.iter transforms (function
+             | [ transform ] ->
+                 let transform =
+                   transform |> Ecs.Component.unpack (module Transform.C)
+                 in
+                 let tx, ty, tz =
+                   Math.Vec3.to_tuple (Transform.translation transform)
+                 in
+                 if w_pressed then
+                   Transform.set_translation transform
+                     (Math.Vec3.v tx ty (tz +. 0.001));
+                 if s_pressed then
+                   Transform.set_translation transform
+                     (Math.Vec3.v tx ty (tz -. 0.001))
+             | _ -> assert false)
+       | _ -> assert false))
 
 let plugin w =
   let _camera =
@@ -61,13 +66,7 @@ let plugin w =
   in
   add_ball w |> ignore;
 
-  Ecs.World.add_system w Ecs.Scheduler.Update
-    [|
-      Ecs.Query.create ~filter:(Ecs.Query.Filter.With Ball.C.id)
-        [ Ecs.Query.Required Transform.C.id ];
-      Ecs.Query.create [ Ecs.Query.Required Input.State.Keys.C.id ];
-    |]
-    move_ball
+  Ecs.World.add_system w Ecs.Scheduler.Update move_ball
 
 let () =
   let app =

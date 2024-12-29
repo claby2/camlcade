@@ -7,7 +7,7 @@ type t = {
   entity_index : (Id.Entity.t, Archetype.Hash.t) Hashtbl.t;
   (* TODO: component id -> (archetype id -> column) *)
   component_index : (Id.Component.t, ArchetypeHashSet.t) Hashtbl.t;
-  scheduler : (Query.t array * t System.t) Scheduler.t;
+  scheduler : t System.t Scheduler.t;
   mutable quit : bool;
 }
 
@@ -121,8 +121,8 @@ let get_component w entity component =
     Archetype.get_component archetype entity component
   with Not_found -> None
 
-let add_system w schedule queries system =
-  Scheduler.register w.scheduler schedule (queries, system)
+let add_system w schedule system =
+  Scheduler.register w.scheduler schedule system
 
 let evaluate_query w (query : Query.t) =
   let required_components = Query.required_components query in
@@ -154,13 +154,8 @@ let evaluate_query w (query : Query.t) =
 exception Quit
 
 let run_systems w schedule =
-  let run_system (queries, system) =
-    let result = queries |> Array.map (evaluate_query w) in
-    try
-      match system with
-      | System.Query system -> system result
-      | System.Immediate system -> system w result
-    with Quit -> w.quit <- true
+  let run_system system =
+    try System.run w (evaluate_query w) system with Quit -> w.quit <- true
   in
   Scheduler.fetch w.scheduler schedule |> List.iter run_system
 

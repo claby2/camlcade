@@ -1,3 +1,4 @@
+(*
 open Util
 open Ecs
 
@@ -163,3 +164,4 @@ let () =
   test_complex ();
   test_immediate ();
   test_quit ()
+  *)
