@@ -15,8 +15,17 @@ module Result : sig
 
   val entity_single : t -> (Id.Entity.t * Component.packed list) option
   val single : t -> Component.packed list option
-  val entity_iter : t -> (Id.Entity.t * Component.packed list -> unit) -> unit
-  val iter : t -> (Component.packed list -> unit) -> unit
+  val entity_iter : (Id.Entity.t * Component.packed list -> unit) -> t -> unit
+  val iter : (Component.packed list -> unit) -> t -> unit
+  val entity_map : (Id.Entity.t * Component.packed list -> 'a) -> t -> 'a list
+  val map : (Component.packed list -> 'a) -> t -> 'a list
+  val entity_filter : (Id.Entity.t * Component.packed list -> bool) -> t -> t
+  val filter : (Component.packed list -> bool) -> t -> t
+
+  val entity_filter_map :
+    (Id.Entity.t * Component.packed list -> 'a option) -> t -> 'a list
+
+  val filter_map : (Component.packed list -> 'a option) -> t -> 'a list
 end
 
 type term = Required of Id.Component.t | Optional of Id.Component.t

@@ -13,30 +13,28 @@ let initialize ~gl =
       let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
       let shaders = q (Ecs.Query.create [ Ecs.Query.Required Shader.C.id ]) in
       let meshes3d = q (Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ]) in
-      (context |> Ecs.Query.Result.single, shaders, meshes3d))
+      ( context |> Ecs.Query.Result.single,
+        shaders
+        |> Ecs.Query.Result.map (function
+             | [ s ] -> Ecs.Component.unpack (module Shader.C) s
+             | _ -> assert false),
+        meshes3d
+        |> Ecs.Query.Result.map (function
+             | [ m ] -> Ecs.Component.unpack (module Mesh3d.C) m
+             | _ -> assert false) ))
     (Ecs.System.Query
        (function
        | Some [ context ], shaders, meshes3d ->
            let context = context |> Ecs.Component.unpack (module Context.C) in
            Context.initialize ~gl context;
            (* Initialize shaders *)
-           Ecs.Query.Result.iter shaders (function
-             | [ shader ] ->
-                 let shader =
-                   shader |> Ecs.Component.unpack (module Shader.C)
-                 in
-                 Shader.initialize shader
-             | _ -> assert false);
+           shaders |> List.iter Shader.initialize;
            (* Initialize and install 3d meshes *)
-           Ecs.Query.Result.iter meshes3d (function
-             | [ mesh3d ] ->
-                 let mesh3d =
-                   mesh3d |> Ecs.Component.unpack (module Mesh3d.C)
-                 in
-                 Mesh3d.initialize mesh3d;
-                 (* TODO: Is this the right place to install VBOs? *)
-                 Mesh3d.install_vbo mesh3d
-             | _ -> assert false)
+           meshes3d
+           |> List.iter (fun mesh3d ->
+                  (* TODO: Is this the right place to install VBOs? *)
+                  Mesh3d.initialize mesh3d;
+                  Mesh3d.install_vbo mesh3d)
        | _ -> assert false))
 
 let render =
@@ -104,60 +102,50 @@ let shade3d =
                Ecs.Query.Optional Transform.C.id;
              ])
       in
-      (cameras, entities))
+      ( cameras
+        |> Ecs.Query.Result.map (function
+             | [ c ] -> Ecs.Component.unpack (module Camera.Dim3.C) c
+             | _ -> assert false),
+        entities
+        |> Ecs.Query.Result.map (function
+             | [ m; s; t ] ->
+                 ( Ecs.Component.unpack (module Mesh3d.C) m,
+                   Ecs.Component.unpack (module Shader.C) s,
+                   Ecs.Component.unpack_opt (module Transform.C) t )
+             | _ -> assert false) ))
     (Ecs.System.Query
-       (function
-       | cameras, entities ->
-           check_gl_error ();
-           Gl.clear_color 0. 0. 0. 1.;
-           Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
-           let render_to_camera c =
-             let render_entity mesh3d shader t_opt =
-               match Shader.tag_opt shader with
-               | Some Shader.Phong ->
-                   Shader.with_shader shader (fun pid ->
-                       load_matrix4fv (Camera.Dim3.view c) pid "viewMatrix";
-                       load_matrix4fv (Camera.Dim3.projection c) pid
-                         "projectionMatrix";
+       (fun (cameras, entities) ->
+         check_gl_error ();
+         Gl.clear_color 0. 0. 0. 1.;
+         Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
+         let render_entity c mesh3d shader t_opt =
+           match Shader.tag_opt shader with
+           | Some Shader.Phong ->
+               Shader.with_shader shader (fun pid ->
+                   load_matrix4fv (Camera.Dim3.view c) pid "viewMatrix";
+                   load_matrix4fv (Camera.Dim3.projection c) pid
+                     "projectionMatrix";
 
-                       let transform =
-                         match t_opt with
-                         | Some t -> Transform.compute_matrix t
-                         | None -> Math.Mat4.id
-                       in
+                   let transform =
+                     match t_opt with
+                     | Some t -> Transform.compute_matrix t
+                     | None -> Math.Mat4.id
+                   in
 
-                       let normal_matrix =
-                         Math.Mat3.inv
-                           (Math.Mat3.transpose (Math.Mat3.of_m4 transform))
-                       in
-                       load_matrix4fv transform pid "modelMatrix";
-                       load_matrix3fv normal_matrix pid "normalMatrix";
+                   let normal_matrix =
+                     Math.Mat3.inv
+                       (Math.Mat3.transpose (Math.Mat3.of_m4 transform))
+                   in
+                   load_matrix4fv transform pid "modelMatrix";
+                   load_matrix3fv normal_matrix pid "normalMatrix";
 
-                       Mesh3d.draw mesh3d)
-               | _ -> ()
-             in
-             Ecs.Query.Result.iter entities (function
-               | [ mesh3d; shader; transform_opt ] ->
-                   let mesh3d =
-                     mesh3d |> Ecs.Component.unpack (module Mesh3d.C)
-                   in
-                   let shader =
-                     shader |> Ecs.Component.unpack (module Shader.C)
-                   in
-                   let transform_opt =
-                     transform_opt
-                     |> Ecs.Component.unpack_opt (module Transform.C)
-                   in
-                   render_entity mesh3d shader transform_opt
-               | _ -> assert false)
-           in
-           Ecs.Query.Result.iter cameras (function
-             | [ camera ] ->
-                 let camera =
-                   camera |> Ecs.Component.unpack (module Camera.Dim3.C)
-                 in
-                 render_to_camera camera
-             | _ -> assert false)))
+                   Mesh3d.draw mesh3d)
+           | _ -> ()
+         in
+         List.iter
+           (fun c ->
+             List.iter (fun (m, s, t) -> render_entity c m s t) entities)
+           cameras))
 
 let cleanup =
   Ecs.System.make
@@ -165,7 +153,15 @@ let cleanup =
       let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
       let shaders = q (Ecs.Query.create [ Ecs.Query.Required Shader.C.id ]) in
       let meshes3d = q (Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ]) in
-      (context |> Ecs.Query.Result.entity_single, shaders, meshes3d))
+      ( context |> Ecs.Query.Result.entity_single,
+        shaders
+        |> Ecs.Query.Result.map (function
+             | [ s ] -> Ecs.Component.unpack (module Shader.C) s
+             | _ -> assert false),
+        meshes3d
+        |> Ecs.Query.Result.map (function
+             | [ m ] -> Ecs.Component.unpack (module Mesh3d.C) m
+             | _ -> assert false) ))
     (Ecs.System.Immediate
        (fun w -> function
          | Some (context_entity, [ context ]), shaders, meshes3d ->
@@ -174,21 +170,9 @@ let cleanup =
              Context.destroy context;
              Ecs.World.remove_entity w context_entity;
              (* Destroy shaders *)
-             Ecs.Query.Result.iter shaders (function
-               | [ shader ] ->
-                   let shader =
-                     shader |> Ecs.Component.unpack (module Shader.C)
-                   in
-                   Shader.destroy shader
-               | _ -> assert false);
+             List.iter Shader.destroy shaders;
              (* Destroy meshes *)
-             Ecs.Query.Result.iter meshes3d (function
-               | [ mesh3d ] ->
-                   let mesh3d =
-                     mesh3d |> Ecs.Component.unpack (module Mesh3d.C)
-                   in
-                   Mesh3d.destroy mesh3d
-               | _ -> assert false)
+             List.iter Mesh3d.destroy meshes3d
          | _ -> assert false))
 
 let plugin w =

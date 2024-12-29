@@ -34,8 +34,14 @@ module Result = struct
     | Some (_, components) -> Some components
     | None -> None
 
-  let entity_iter r f = List.iter f r
-  let iter r f = List.iter (fun (_, components) -> f components) r
+  let entity_iter = List.iter
+  let iter f = List.iter (fun (_, components) -> f components)
+  let entity_map = List.map
+  let map f = List.map (fun (_, components) -> f components)
+  let entity_filter = List.filter
+  let filter f = List.filter (fun (_, components) -> f components)
+  let entity_filter_map = List.filter_map
+  let filter_map f = List.filter_map (fun (_, components) -> f components)
 end
 
 type term = Required of Id.Component.t | Optional of Id.Component.t
