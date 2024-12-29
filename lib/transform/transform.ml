@@ -11,6 +11,10 @@ let identity () =
     scale = Math.Vec3.v 1. 1. 1.;
   }
 
+let of_xyz x y z = { (identity ()) with translation = Math.Vec3.v x y z }
+let with_translation v t = { t with translation = v }
+let with_rotation q t = { t with rotation = q }
+let with_scale v t = { t with scale = v }
 let translation t = t.translation
 let rotation t = t.rotation
 let scale t = t.scale
