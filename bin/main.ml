@@ -57,7 +57,7 @@ let plugin w =
          (Graphics.Mesh3d.of_primitive
             (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ()))
     |> World.with_component w (module Transform.C) (Transform.identity ())
-    |> World.with_component w (module Graphics.Shader.C) Graphics.Shader.phong
+    |> World.with_component w (module Graphics.Shader.Normal.C) ()
     |> World.with_component w (module Ball.C) ()
   in
   add_ball w |> ignore;
