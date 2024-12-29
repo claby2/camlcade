@@ -1,11 +1,11 @@
-# 🐪🎮 camlcade
+# 🐫🎮 camlcade
 
 > [!WARNING]
 > Still in development. Not ready for production.
 
 camlcade is an OCaml game engine. It features an archetype-based entity-component system (ECS) and an OpenGL-based renderer.
 
-For an example of how to use camlcade, see [bin/main.ml](bin/main.ml).
+To see how to use camlcade, see [examples/](examples/).
 
 ## Features
 

@@ -12,9 +12,9 @@ module Dim3 = struct
     mutable aspect_ratio : float;
   }
 
-  let create ?(pos = Math.Vec3.zero) ?(look = Math.Vec3.v (-3.) (-3.) (-3.))
+  let create ?(pos = Math.Vec3.zero) ?(look = Math.Vec3.zero)
       ?(up = Math.Vec3.v 0. 1. 0.) ?(height_angle = radians_of_deg 30.)
-      ?(near_plane = 0.1) ?(far_plane = 10.) ?(aspect_ratio = 4. /. 3.) () =
+      ?(near_plane = 0.1) ?(far_plane = 100.) ?(aspect_ratio = 4. /. 3.) () =
     { pos; look; up; height_angle; near_plane; far_plane; aspect_ratio }
 
   let view t =

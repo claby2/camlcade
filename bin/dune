@@ -1,4 +1,0 @@
-(executable
- (public_name camlcade)
- (name main)
- (libraries camlcade))

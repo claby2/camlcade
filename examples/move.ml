@@ -1,3 +1,5 @@
+(** Move a ball up and down with the W and S keys. *)
+
 open Camlcade
 open Ecs
 
@@ -31,9 +33,9 @@ let move_ball =
       (fun transform ->
         let tx, ty, tz = Math.Vec3.to_tuple (Transform.translation transform) in
         if w_pressed then
-          Transform.set_translation transform (Math.Vec3.v tx ty (tz +. 0.001));
+          Transform.set_translation transform (Math.Vec3.v tx ty (tz -. 0.001));
         if s_pressed then
-          Transform.set_translation transform (Math.Vec3.v tx ty (tz -. 0.001)))
+          Transform.set_translation transform (Math.Vec3.v tx ty (tz +. 0.001)))
       transforms
   in
   System.make query
@@ -47,7 +49,9 @@ let plugin w =
     World.add_entity w
     |> World.with_component w
          (module Graphics.Camera.Dim3.C)
-         (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.) ())
+         (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.)
+            ~look:(Math.Vec3.v (-3.) (-3.) (-3.))
+            ())
   in
   let add_ball w =
     World.add_entity w

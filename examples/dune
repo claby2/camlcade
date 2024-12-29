@@ -1,0 +1,3 @@
+(executables
+ (public_names shapes move)
+ (libraries camlcade))
