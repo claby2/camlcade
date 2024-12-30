@@ -42,20 +42,20 @@ end
 (** {1:packed Packed} *)
 
 type packed
-(** A type-erased component. *)
+(** A type-erased component.
+
+    This is used to store components, possibly of different types, in a
+    container. *)
 
 val pack : 'a. (module S with type t = 'a) -> 'a -> packed
-(** [pack component value] packs the component [value] into a
-    {!Ecs.Component.type-packed}. *)
+(** [pack c v] packs the component value [v] of module [c]. *)
 
 val unpack : 'a. (module S with type t = 'a) -> packed -> 'a
-(** [unpack component packed] unpacks the component from the
-    {!Ecs.Component.type-packed}. *)
+(** [unpack c p] unpacks the component [p] to the module [c]'s inner type. *)
 
 val unpack_opt : 'a. (module S with type t = 'a) -> packed -> 'a option
-(** [unpack_opt component packed] unpacks the component from the
-    {!Ecs.Component.type-packed}, returning [None] if the component is not
-    valid. *)
+(** [unpack_opt c p] unpacks the component [p] to the module [c], returning
+    [None] if the component is not of the correct type. *)
 
 val id : packed -> Id.Component.t
-(** [id packed] returns the unique identifier of the component. *)
+(** [id p] returns the unique identifier of the packed component [p]. *)

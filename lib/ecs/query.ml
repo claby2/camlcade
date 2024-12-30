@@ -22,7 +22,8 @@ module Filter = struct
 end
 
 module Result = struct
-  type t = (Id.Entity.t * Component.packed list) list
+  type entity = Id.Entity.t * Component.packed list
+  type t = entity list
 
   let entity_single r =
     match r with
@@ -53,57 +54,25 @@ let required_components q =
   q.terms |> List.filter_map (function Required c -> Some c | _ -> None)
 
 let evaluate q archetypes =
-  archetypes
-  (* Only consider archetypes that match the filter *)
-  |> List.filter (fun a -> Filter.matches q.filter (Archetype.components a))
-  |> List.map (fun a ->
-         let entities = Archetype.entities a |> Id.EntitySet.to_list in
-         entities
-         |> List.map (fun e ->
-                let response_components =
-                  q.terms
-                  |> List.map (function
-                       | Required c ->
-                           Archetype.get_component a e c |> Option.get
-                       | Optional c ->
-                           (* If the component is not present, return a None component *)
-                           Archetype.get_component a e c
-                           |> Option.value
-                                ~default:
-                                  (Component.pack (module Component.None.C) ()))
-                in
-                (e, response_components)))
-  |> List.concat
+  if List.is_empty q.terms then []
+  else
+    let matches_filter a = Filter.matches q.filter (Archetype.components a) in
 
-(* SCRATCH:
+    let fetch_components a e =
+      let get_component = Archetype.get_component a in
+      List.map
+        (function
+          | Required c -> get_component e c |> Option.get
+          | Optional c ->
+              get_component e c
+              |> Option.value
+                   ~default:(Component.pack (module Component.None.C) ()))
+        q.terms
+    in
 
-A : component_id -> archetype_id list
-if all optional, then the search space is ALL archetypes
-else, intersect all the required archetypes
+    let build_result a =
+      Archetype.entities a |> Id.EntitySet.to_list
+      |> List.map (fun e -> (e, fetch_components a e))
+    in
 
-
-[c1, c2, optionally c3]
-
-A(c1) \cap A(c2)
-
-[optionally c1, optionally c2]
-
-ALL
-
-[optionally c1, c2, optionally c3]
-
-A(c2)
-
-Queries one would want to express:
-
-[Transform.C.id, Health.C.id] -> [[t1, h1], [t2, h2], ...]
-- Query all components with both Transform and Health components
-
-[Optional Transform.C.id, Health.C.id] -> [[t1, h1], [n, h1], ...]
-- Query all components with health and might have a transform
-  If transform is not present, then a custom None component will be returned in-place
-
-[AnyOf [Transform.C.id, Health.C.id], Other.C.id] ->
-    [[t1, h1, o1], [n, h2, o2], [t3, n, o3], ...]
-- Query all components that have one of Transform or Health (can be both) and Other
-*)
+    archetypes |> List.filter matches_filter |> List.concat_map build_result
