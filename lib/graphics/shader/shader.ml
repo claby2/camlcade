@@ -57,13 +57,14 @@ let destroy s =
 let normal = create ~frag:Normal.frag ~vert:Normal.vert
 
 let shade_normal =
+  let shade pid entities projection camera_transform =
+    List.iter
+      (fun (m, t) ->
+        Normal.render pid projection m ?transform:t ?camera_transform)
+      entities
+  in
   Ecs.System.make Normal.query
     (Ecs.System.Query
        (fun (cameras, entities) ->
          with_shader normal (fun pid ->
-             List.iter
-               (fun c ->
-                 List.iter
-                   (fun (m, t) -> Normal.render pid c m ?transform:t)
-                   entities)
-               cameras)))
+             List.iter (fun (p, t) -> shade pid entities p t) cameras)))

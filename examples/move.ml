@@ -47,11 +47,16 @@ let move_ball =
 let plugin w =
   let _camera =
     World.add_entity w
+    |> World.with_component w (module Graphics.Camera3d.C) ()
     |> World.with_component w
-         (module Graphics.Camera.Dim3.C)
-         (Graphics.Camera.Dim3.create ~pos:(Math.Vec3.v 3. 3. 3.)
-            ~look:(Math.Vec3.v (-3.) (-3.) (-3.))
-            ())
+         (module Graphics.Camera.Projection.C)
+         (Graphics.Camera.Projection.perspective ())
+    |> World.with_component w
+         (module Transform.C)
+         Transform.(
+           identity ()
+           |> with_translation (Math.Vec3.v 3. 3. 3.)
+           |> with_look_at (Math.Vec3.v 0. 0. 0.))
   in
   let add_ball w =
     World.add_entity w

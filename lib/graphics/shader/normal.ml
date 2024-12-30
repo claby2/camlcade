@@ -33,7 +33,14 @@ module C = Ecs.Component.Make (struct
 end)
 
 let query q =
-  let cameras = q (Ecs.Query.create [ Ecs.Query.Required Camera.Dim3.C.id ]) in
+  let cameras =
+    q
+      (Ecs.Query.create ~filter:(Ecs.Query.Filter.With Camera.Camera3d.C.id)
+         [
+           Ecs.Query.Required Camera.Projection.C.id;
+           Ecs.Query.Optional Transform.C.id;
+         ])
+  in
   let entities =
     q
       (Ecs.Query.create ~filter:(Ecs.Query.Filter.With C.id)
@@ -41,7 +48,9 @@ let query q =
   in
   ( cameras
     |> Ecs.Query.Result.map (function
-         | [ c ] -> Ecs.Component.unpack (module Camera.Dim3.C) c
+         | [ p; t ] ->
+             ( Ecs.Component.unpack (module Camera.Projection.C) p,
+               Ecs.Component.unpack_opt (module Transform.C) t )
          | _ -> assert false),
     entities
     |> Ecs.Query.Result.map (function
@@ -50,9 +59,13 @@ let query q =
                Ecs.Component.unpack_opt (module Transform.C) t )
          | _ -> assert false) )
 
-let render ?(transform = Transform.identity ()) pid camera mesh3d =
-  load_matrix4fv (Camera.Dim3.view camera) pid "viewMatrix";
-  load_matrix4fv (Camera.Dim3.projection camera) pid "projectionMatrix";
+let render ?(transform = Transform.identity ())
+    ?(camera_transform = Transform.identity ()) pid projection mesh3d =
+  let view = Math.Mat4.inv (Transform.compute_matrix camera_transform) in
+  load_matrix4fv view pid "viewMatrix";
+
+  let projection = Camera.Projection.project projection in
+  load_matrix4fv projection pid "projectionMatrix";
 
   let transform = Transform.compute_matrix transform in
   let normal_matrix =

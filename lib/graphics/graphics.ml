@@ -2,6 +2,7 @@ open Util
 open Tgl4
 open Tsdl
 module Camera = Camera
+module Camera3d = Camera.Camera3d
 module Mesh3d = Mesh3d
 module Shader = Shader
 module Vertex_mesh = Vertex_mesh

@@ -22,6 +22,16 @@ val with_rotation : Math.Quat.t -> t -> t
 val with_scale : Math.Vec3.t -> t -> t
 (** Build a transform with the given scale. *)
 
+val with_look_to : ?up:Math.Vec3.t -> Math.Vec3.t -> t -> t
+(** [with_look_to ~up dir t] returns a new transform that looks in the direction
+    [dir] with the up vector [up]. *)
+
+val with_look_at : ?up:Math.Vec3.t -> Math.Vec3.t -> t -> t
+(** [with_look_at ~up target t] returns a new transform that looks at the target
+    [target] with the up vector [up]. *)
+
+(** {1:operations Operations} *)
+
 (** {1:getters Getters} *)
 
 val translation : t -> Math.Vec3.t

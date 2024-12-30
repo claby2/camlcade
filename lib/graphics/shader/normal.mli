@@ -3,9 +3,18 @@ val vert : string
 
 val query :
   (Ecs.Query.t -> Ecs.Query.Result.t) ->
-  Camera.Dim3.t list * (Mesh3d.t * Transform.t option) list
+  (Camera.Projection.t * Transform.t option) list
+  * (Mesh3d.t * Transform.t option) list
 (** [query q] returns the necessary components for the render function. *)
 
-val render : ?transform:Transform.t -> int -> Camera.Dim3.t -> Mesh3d.t -> unit
+val render :
+  ?transform:Transform.t ->
+  ?camera_transform:Transform.t ->
+  int ->
+  Camera.Projection.t ->
+  Mesh3d.t ->
+  unit
+(** Renders using the normal shader. *)
 
 module C : Ecs.Component.S with type t = unit
+(** Normal shader component. *)

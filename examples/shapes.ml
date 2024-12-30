@@ -3,10 +3,23 @@
 open Camlcade
 open Ecs
 
+(** Marker component for shapes. *)
+module Shape = struct
+  type t = unit
+
+  module C = Component.Make (struct
+    type inner = t
+  end)
+end
+
 let rotate =
   let last_timestamp = ref None in
   let query q =
-    let transforms = q (Query.create [ Query.Required Transform.C.id ]) in
+    let transforms =
+      q
+        (Query.create ~filter:(Query.Filter.With Shape.C.id)
+           [ Query.Required Transform.C.id ])
+    in
     transforms
     |> Query.Result.map (function
          | [ t ] -> Component.unpack (module Transform.C) t
@@ -36,20 +49,25 @@ let add_shape w primitive x y z =
        (Graphics.Mesh3d.of_primitive primitive)
   |> World.with_component w
        (module Transform.C)
-       (Transform.of_xyz x y z |> Transform.with_scale (Math.Vec3.v 1.3 1.3 1.3))
+       Transform.(of_xyz x y z |> with_scale (Math.Vec3.v 1.3 1.3 1.3))
   |> World.with_component w (module Graphics.Shader.Normal.C) ()
+  |> World.with_component w (module Shape.C) ()
+
+let add_camera w =
+  World.add_entity w
+  |> World.with_component w (module Graphics.Camera3d.C) ()
+  |> World.with_component w
+       (module Graphics.Camera.Projection.C)
+       (Graphics.Camera.Projection.perspective () ~height_angle:(Float.pi /. 4.))
+  |> World.with_component w
+       (module Transform.C)
+       Transform.(
+         identity ()
+         |> with_translation (Math.Vec3.v 0. 7. 14.)
+         |> with_look_at (Math.Vec3.v 0. 0. 0.))
 
 let plugin w =
-  let pos = Math.Vec3.v 0. 7. 14. in
-  let height_angle = 45. *. Float.pi /. 180. in
-  let look = Math.Vec3.sub Math.Vec3.zero pos in
-  let _camera =
-    World.add_entity w
-    |> World.with_component w
-         (module Graphics.Camera.Dim3.C)
-         (Graphics.Camera.Dim3.create ~pos ~far_plane:100. ~height_angle ~look
-            ())
-  in
+  add_camera w |> ignore;
   (* TODO: Use more interesting primitives *)
   let primitives =
     [
@@ -68,7 +86,7 @@ let plugin w =
       |> ignore)
     primitives;
 
-  World.add_system w Ecs.Scheduler.Update rotate
+  World.add_system w Scheduler.Update rotate
 
 let () =
   let app =
