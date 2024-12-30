@@ -41,6 +41,12 @@ let compute_matrix t =
   Math.Mat4.of_cols (Math.Vec4.smul sx x_axis) (Math.Vec4.smul sy y_axis)
     (Math.Vec4.smul sz z_axis) (Math.Vec4.v tx ty tz 1.)
 
+let local axis t = Math.Vec3.normalize (Math.Quat.apply3 t.rotation axis)
+let local_x = local Math.Vec3.ox
+let local_y = local Math.Vec3.oy
+let local_z = local Math.Vec3.oz
+let forward t = Math.Vec3.neg (local_z t)
+
 module C = Ecs.Component.Make (struct
   type inner = t
 end)

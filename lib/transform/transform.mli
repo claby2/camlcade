@@ -60,6 +60,20 @@ val compute_matrix : t -> Math.Mat4.t
 (** Calculate the transformation matrix from the translation, rotation, and
     scale. *)
 
+val local_x : t -> Math.Vec3.t
+(** Return the local x-axis of the transform. *)
+
+val local_y : t -> Math.Vec3.t
+(** Return the local y-axis of the transform. *)
+
+val local_z : t -> Math.Vec3.t
+(** Return the local z-axis of the transform. *)
+
+val forward : t -> Math.Vec3.t
+(** Return the forward vector of the transform.
+
+    This is equivalent to the negative z-axis. *)
+
 (** {1:component Component} *)
 
 module C : Ecs.Component.S with type t = t
