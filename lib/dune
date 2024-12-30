@@ -1,3 +1,4 @@
 (library
  (name camlcade)
+ (public_name camlcade)
  (libraries ecs math graphics input))

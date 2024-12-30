@@ -5,8 +5,6 @@
 
 camlcade is an OCaml game engine. It features an archetype-based entity-component system (ECS) and an OpenGL-based renderer.
 
-To see how to use camlcade, see [examples/](examples/).
-
 ## Features
 
 - Archetype storage
@@ -14,7 +12,19 @@ To see how to use camlcade, see [examples/](examples/).
 - User-defined GLSL shaders
 - Custom meshes
 
-## Project Structure
+## Examples
+
+To see how to use camlcade, see [examples/](examples/).
+
+Run an example with:
+```sh
+# Runs the "shapes" example
+dune exec shapes
+```
+
+## Development
+
+### Project Structure
 
 ```
 lib
@@ -25,3 +35,10 @@ lib
 ├── storage   # Sparse storage (currently unused)
 └── transform # Transform component
 ```
+
+### Quick Start
+
+- Build: `dune build`
+- Test: `dune test`
+- Benchmark: `dune build @bench-<benchmark>` (e.g. `dune build @bench-ecs`, see [bench/dune](bench/dune))
+- Documentation: `dune build @doc` (see `_build/default/_doc/_html/index.html`)

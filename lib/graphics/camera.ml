@@ -18,11 +18,8 @@ module Dim3 = struct
     { pos; look; up; height_angle; near_plane; far_plane; aspect_ratio }
 
   let view t =
-    let w = Math.Vec3.normalize (Math.Vec3.neg t.look) in
-    let v =
-      Math.Vec3.normalize
-        Math.Vec3.(t.up - Math.Vec3.smul (Math.Vec3.dot t.up w) w)
-    in
+    let w = Math.Vec3.(normalize (neg t.look)) in
+    let v = Math.Vec3.(normalize (t.up - smul (dot t.up w) w)) in
     let u = Math.Vec3.cross v w in
     let x, y, z = Math.Vec3.to_tuple t.pos in
     let trans =

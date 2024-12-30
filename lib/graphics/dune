@@ -1,4 +1,5 @@
 (include_subdirs qualified)
 (library
+  (public_name camlcade.graphics)
   (name graphics)
   (libraries ecs transform input tsdl tgls.tgl4))
