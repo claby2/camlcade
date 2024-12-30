@@ -51,5 +51,6 @@ let construct c =
   Shape.{ positions = !(c.positions); normals = !(c.normals) }
 
 let create ?(x_length = 1.) ?(y_length = 1.) ?(z_length = 1.) ?(param1 = 2) () =
+  let param1 = max param1 1 in
   let half_size = Math.Vec3.(smul 0.5 (v x_length y_length z_length)) in
   construct { half_size; param1; positions = ref []; normals = ref [] }

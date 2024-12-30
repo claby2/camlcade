@@ -8,12 +8,6 @@ type config = {
   normals : float list ref;
 }
 
-let sphere_coord r theta phi =
-  Math.Vec3.v
-    (r *. sin phi *. cos theta)
-    (r *. cos phi)
-    (r *. sin phi *. sin theta)
-
 let add_tile c tl tr bl br =
   let add v =
     add_vec3 c.positions v;
@@ -32,10 +26,11 @@ let add_wedge c theta theta' =
   for i = 0 to c.param1 - 1 do
     let phi = float_of_int i *. step in
     let phi' = float_of_int (i + 1) *. step in
-    let tl = sphere_coord c.radius theta phi' in
-    let tr = sphere_coord c.radius theta' phi' in
-    let bl = sphere_coord c.radius theta phi in
-    let br = sphere_coord c.radius theta' phi in
+    let spherical = Math.Vec3.spherical c.radius in
+    let tl = spherical theta phi' in
+    let tr = spherical theta' phi' in
+    let bl = spherical theta phi in
+    let br = spherical theta' phi in
     add_tile c tl tr bl br
   done
 
