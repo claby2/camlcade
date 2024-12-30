@@ -43,3 +43,7 @@ let check_gl_error () =
     errored := true
   done;
   if !errored then failwith "shortcircuit in print_gl_error"
+
+let add_vec3 l v =
+  let x, y, z = Math.Vec3.to_tuple v in
+  l := x :: y :: z :: !l

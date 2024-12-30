@@ -1,3 +1,4 @@
+module Cuboid = Cuboid
 module Sphere = Sphere
 
 type t = Shape.t

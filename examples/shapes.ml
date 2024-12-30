@@ -3,10 +3,8 @@
 open Camlcade
 open Ecs
 
-let x_extent = 14.0
-let last_timestamp = ref None
-
 let rotate =
+  let last_timestamp = ref None in
   let query q =
     let transforms = q (Query.create [ Query.Required Transform.C.id ]) in
     transforms
@@ -59,9 +57,10 @@ let plugin w =
       Graphics.Primitive.Sphere.create ~param1:4 ~param2:4 ();
       Graphics.Primitive.Sphere.create ~param1:8 ~param2:8 ();
       Graphics.Primitive.Sphere.create ~param1:16 ~param2:16 ();
-      Graphics.Primitive.Sphere.create ~param1:32 ~param2:32 ();
+      Graphics.Primitive.Cuboid.create ~param1:16 ();
     ]
   in
+  let x_extent = 14.0 in
   let step = x_extent /. Float.of_int (List.length primitives) in
   List.iteri
     (fun i primitive ->

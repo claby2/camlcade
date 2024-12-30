@@ -1,3 +1,5 @@
+open Util
+
 type config = {
   radius : float;
   param1 : int;
@@ -11,10 +13,6 @@ let sphere_coord r theta phi =
     (r *. sin phi *. cos theta)
     (r *. cos phi)
     (r *. sin phi *. sin theta)
-
-let add_vec3 l v =
-  let x, y, z = Math.Vec3.to_tuple v in
-  l := x :: y :: z :: !l
 
 let add_tile c tl tr bl br =
   let add v =
