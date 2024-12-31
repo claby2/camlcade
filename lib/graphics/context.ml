@@ -53,6 +53,15 @@ let destroy t =
       Sdl.destroy_window win;
       Sdl.gl_delete_context ctx
 
+module Window = Sdl.Window
+
+let set_relative_mouse_mode v = Sdl.set_relative_mouse_mode v >>= fun () -> ()
+
+let set_window_fullscreen t flags =
+  match !t with
+  | None -> invalid_arg "Context.set_window_fullscreen"
+  | Some { win; _ } -> Sdl.set_window_fullscreen win flags >>= fun () -> ()
+
 module C = Ecs.Component.Make (struct
   type inner = t
 end)

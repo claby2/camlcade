@@ -1,6 +1,7 @@
 open Util
 open Tgl4
 open Tsdl
+module Context = Context
 module Camera = Camera
 module Camera3d = Camera.Camera3d
 module Mesh3d = Mesh3d

@@ -9,6 +9,20 @@ module FirstPersonCamera = struct
   end)
 end
 
+let setup_window =
+  System.make
+    (fun q ->
+      let open Query in
+      let context = q (create [ Required Graphics.Context.C.id ]) in
+      match context |> Result.single with
+      | Some [ c ] -> Component.unpack (module Graphics.Context.C) c
+      | _ -> assert false)
+    (System.Query
+       (fun context ->
+         Graphics.Context.set_window_fullscreen context
+           Graphics.Context.Window.fullscreen;
+         Graphics.Context.set_relative_mouse_mode true))
+
 let handle_keyboard =
   let calculate_move transform w a s d =
     let move = ref (Math.Vec3.v 0. 0. 0.) in
@@ -95,7 +109,7 @@ let handle_mouse =
         Transform.set_rotation transform new_rotation)
       (Input.Mouse.Motion_event.read mouse_motion)
   in
-  Ecs.System.make query (Ecs.System.Query move)
+  System.make query (System.Query move)
 
 let plugin w =
   let _cuboid =
@@ -105,6 +119,7 @@ let plugin w =
          (Graphics.Mesh3d.of_primitive (Graphics.Primitive.Cuboid.create ()))
     |> World.with_component w (module Graphics.Shader.Normal.C) ()
   in
+
   let _camera =
     World.add_entity w
     |> World.with_component w (module Graphics.Camera3d.C) ()
@@ -114,6 +129,8 @@ let plugin w =
     |> World.with_component w (module Transform.C) (Transform.identity ())
     |> World.with_component w (module FirstPersonCamera.C) ()
   in
+
+  World.add_system w Scheduler.Startup setup_window;
   World.add_system w Scheduler.Update handle_keyboard;
   World.add_system w Scheduler.Update handle_mouse
 
