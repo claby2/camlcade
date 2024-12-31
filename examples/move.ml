@@ -28,8 +28,8 @@ let move_ball =
       | _ -> assert false )
   in
   let move (transforms, keyboard) =
-    let w_pressed = Input.Keyboard.is_just_pressed keyboard `W in
-    let s_pressed = Input.Keyboard.is_just_pressed keyboard `S in
+    let w_pressed = Input.Keyboard.is_pressed keyboard `W in
+    let s_pressed = Input.Keyboard.is_pressed keyboard `S in
     List.iter
       (fun transform ->
         let tx, ty, tz = Math.Vec3.to_tuple (Transform.translation transform) in
