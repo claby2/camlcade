@@ -17,7 +17,16 @@ module Mouse = struct
 
   module Button = Button_state.Make (Mouse_button) (Button_event)
 
-  (* TODO: Add mouse motion events. *)
+  type motion = { x : int; y : int; dx : int; dy : int }
+
+  let x m = m.x
+  let y m = m.y
+  let dx m = m.dx
+  let dy m = m.dy
+
+  module Motion_event = Ecs.Event.Make (struct
+    type t = motion
+  end)
 end
 
 let write_events =
@@ -26,9 +35,13 @@ let write_events =
     let key = q (create [ Required Key_event.C.id ]) in
     let window = q (create [ Required Window_event.C.id ]) in
     let mouse_button = q (create [ Required Mouse.Button_event.C.id ]) in
-    (Result.single key, Result.single window, Result.single mouse_button)
+    let mouse_motion = q (create [ Required Mouse.Motion_event.C.id ]) in
+    ( Result.single key,
+      Result.single window,
+      Result.single mouse_button,
+      Result.single mouse_motion )
   in
-  let write key window mouse_button =
+  let write key window mouse_button mouse_motion =
     let event = Sdl.Event.create () in
 
     (* Convenent functions for extracting data from SDL events. *)
@@ -51,21 +64,24 @@ let write_events =
       | `Mouse_button_up ->
           Mouse.Button_event.write mouse_button
             (Mouse_button.Up (scan_mouse_button event))
+      | `Mouse_motion ->
+          let x = Sdl.Event.(get event mouse_motion_x) in
+          let y = Sdl.Event.(get event mouse_motion_y) in
+          let dx = Sdl.Event.(get event mouse_motion_xrel) in
+          let dy = Sdl.Event.(get event mouse_motion_yrel) in
+          Mouse.Motion_event.write mouse_motion { x; y; dx; dy }
       | _ -> ()
     done
   in
   Ecs.System.make query
     (Ecs.System.Query
        (function
-       | Some [ key ], Some [ window ], Some [ mouse_button ] ->
-           let key = key |> Ecs.Component.unpack (module Key_event.C) in
-           let window =
-             window |> Ecs.Component.unpack (module Window_event.C)
-           in
-           let mouse_button =
-             mouse_button |> Ecs.Component.unpack (module Mouse.Button_event.C)
-           in
-           write key window mouse_button
+       | Some [ k ], Some [ w ], Some [ mb ], Some [ mm ] ->
+           let k = k |> Ecs.Component.unpack (module Key_event.C) in
+           let w = w |> Ecs.Component.unpack (module Window_event.C) in
+           let mb = mb |> Ecs.Component.unpack (module Mouse.Button_event.C) in
+           let mm = mm |> Ecs.Component.unpack (module Mouse.Motion_event.C) in
+           write k w mb mm
        | _ -> assert false))
 
 let plugin w =
@@ -82,12 +98,23 @@ let plugin w =
     |> Ecs.World.with_component w
          (module Mouse.Button.C)
          (Mouse.Button.create ())
+    |> Ecs.World.with_component w
+         (module Mouse.Motion_event.C)
+         (Mouse.Motion_event.empty ())
     |> ignore
   in
 
+  (* The ordering of systems is important. It should be clear -> write -> update. *)
+
+  (* Clear events systems. *)
   Ecs.World.add_system w Ecs.Scheduler.Update Key_event.clear_system;
   Ecs.World.add_system w Ecs.Scheduler.Update Window_event.clear_system;
   Ecs.World.add_system w Ecs.Scheduler.Update Mouse.Button_event.clear_system;
+  Ecs.World.add_system w Ecs.Scheduler.Update Mouse.Motion_event.clear_system;
+
+  (* Write. *)
   Ecs.World.add_system w Ecs.Scheduler.Update write_events;
+
+  (* Button state update systems. *)
   Ecs.World.add_system w Ecs.Scheduler.Update Keyboard.update_system;
   Ecs.World.add_system w Ecs.Scheduler.Update Mouse.Button.update_system

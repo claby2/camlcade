@@ -9,17 +9,17 @@ module FirstPersonCamera = struct
   end)
 end
 
-let calculate_move transform w a s d =
-  let move = ref (Math.Vec3.v 0. 0. 0.) in
-  let forward = Transform.forward transform in
-  let up = Transform.local_y transform in
-  if w then move := Math.Vec3.add !move forward;
-  (if a then move := Math.Vec3.(sub !move (normalize (cross forward up))));
-  if s then move := Math.Vec3.sub !move forward;
-  (if d then move := Math.Vec3.(add !move (normalize (cross forward up))));
-  Math.Vec3.normalize !move
-
 let handle_keyboard =
+  let calculate_move transform w a s d =
+    let move = ref (Math.Vec3.v 0. 0. 0.) in
+    let forward = Transform.forward transform in
+    let up = Transform.local_y transform in
+    if w then move := Math.Vec3.add !move forward;
+    (if a then move := Math.Vec3.(sub !move (normalize (cross forward up))));
+    if s then move := Math.Vec3.sub !move forward;
+    (if d then move := Math.Vec3.(add !move (normalize (cross forward up))));
+    Math.Vec3.normalize !move
+  in
   let query q =
     let open Query in
     let transform =
@@ -35,8 +35,8 @@ let handle_keyboard =
       | Some [ k ] -> Component.unpack (module Input.Keyboard.C) k
       | _ -> assert false )
   in
-  let factor = 0.001 in
   let move (transform, keyboard) =
+    let factor = 0.001 in
     let is_pressed = Input.Keyboard.is_pressed keyboard in
     let w = is_pressed `W in
     let a = is_pressed `A in
@@ -61,6 +61,44 @@ let handle_keyboard =
   in
   System.make query (System.Query move)
 
+let handle_mouse =
+  let query q =
+    let open Query in
+    let transform =
+      q
+        (create ~filter:(Filter.With FirstPersonCamera.C.id)
+           [ Required Transform.C.id ])
+    in
+    let mouse_motion = q (create [ Required Input.Mouse.Motion_event.C.id ]) in
+    ( (match Result.single transform with
+      | Some [ t ] -> Component.unpack (module Transform.C) t
+      | _ -> assert false),
+      match Result.single mouse_motion with
+      | Some [ m ] -> Component.unpack (module Input.Mouse.Motion_event.C) m
+      | _ -> assert false )
+  in
+  let move (transform, mouse_motion) =
+    let factor = 0.001 in
+    let rotation = Transform.rotation transform in
+    let forward = Transform.forward transform in
+    let up = Transform.local_y transform in
+    List.iter
+      (fun motion ->
+        let dx = float_of_int (Input.Mouse.dx motion) in
+        let dy = float_of_int (Input.Mouse.dy motion) in
+        let x_axis = Math.Vec3.v 0. (-1.) 0. in
+        let y_axis = Math.Vec3.(neg (cross forward up)) in
+        let new_rotation =
+          Math.Quat.(
+            mul
+              (rot3_axis y_axis (dy *. factor))
+              (mul rotation (rot3_axis x_axis (dx *. factor))))
+        in
+        Transform.set_rotation transform new_rotation)
+      (Input.Mouse.Motion_event.read mouse_motion)
+  in
+  Ecs.System.make query (Ecs.System.Query move)
+
 let plugin w =
   let _cuboid =
     World.add_entity w
@@ -79,8 +117,7 @@ let plugin w =
     |> World.with_component w (module FirstPersonCamera.C) ()
   in
   World.add_system w Scheduler.Update handle_keyboard;
-  (* TODO: Handle mouse *)
-  ()
+  World.add_system w Scheduler.Update handle_mouse
 
 let () =
   let app =
