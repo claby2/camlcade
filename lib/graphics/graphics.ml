@@ -12,25 +12,14 @@ let initialize ~gl =
   Ecs.System.make
     (fun q ->
       let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      let meshes3d = q (Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ]) in
-      ( context |> Ecs.Query.Result.single,
-        meshes3d
-        |> Ecs.Query.Result.map (function
-             | [ m ] -> Ecs.Component.unpack (module Mesh3d.C) m
-             | _ -> assert false) ))
+      context |> Ecs.Query.Result.single)
     (Ecs.System.Query
        (function
-       | Some [ context ], meshes3d ->
+       | Some [ context ] ->
            let context = context |> Ecs.Component.unpack (module Context.C) in
            Context.initialize ~gl context;
            (* Initialize shaders *)
-           Shader.initialize Shader.normal;
-           (* Initialize and install 3d meshes *)
-           meshes3d
-           |> List.iter (fun mesh3d ->
-                  (* TODO: Is this the right place to install VBOs? *)
-                  Mesh3d.initialize mesh3d;
-                  Mesh3d.install_vbo mesh3d)
+           Shader.initialize Shader.normal
        | _ -> assert false))
 
 let render =
