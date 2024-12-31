@@ -26,10 +26,8 @@ let add_random_ball w =
 let handle_spawn =
   let query q =
     let open Query in
-    let mouse_button = q (create [ Required Input.Mouse.Button.C.id ]) in
-    match Result.single mouse_button with
-    | Some [ m ] -> Component.unpack (module Input.Mouse.Button.C) m
-    | _ -> assert false
+    let mb = q (create [ Required Input.Mouse.Button.C.id ]) in
+    Result.as_single (module Input.Mouse.Button.C) mb |> Option.get
   in
   let spawn world mouse_button =
     if Input.Mouse.Button.is_just_pressed mouse_button `Left then (

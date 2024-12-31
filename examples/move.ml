@@ -13,19 +13,13 @@ end
 
 let move_ball =
   let query q =
-    let transforms =
-      q
-        (Query.create ~filter:(Query.Filter.With Ball.C.id)
-           [ Query.Required Transform.C.id ])
+    let open Query in
+    let t =
+      q (create ~filter:(Filter.With Ball.C.id) [ Required Transform.C.id ])
     in
-    let keys = q (Query.create [ Query.Required Input.Keyboard.C.id ]) in
-    ( transforms
-      |> Query.Result.map (function
-           | [ t ] -> Component.unpack (module Transform.C) t
-           | _ -> assert false),
-      match Query.Result.single keys with
-      | Some [ k ] -> Component.unpack (module Input.Keyboard.C) k
-      | _ -> assert false )
+    let k = q (create [ Required Input.Keyboard.C.id ]) in
+    ( t |> Query.Result.as_list (module Transform.C),
+      k |> Query.Result.as_single (module Input.Keyboard.C) |> Option.get )
   in
   let move (transforms, keyboard) =
     let w_pressed = Input.Keyboard.is_pressed keyboard `W in

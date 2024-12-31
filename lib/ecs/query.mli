@@ -53,6 +53,14 @@ module Result : sig
 
   val filter_map : (Component.packed list -> 'a option) -> t -> 'a list
   (** Filter-map over the components of the entities in the result. *)
+
+  val as_list : (module Component.S with type t = 'a) -> t -> 'a list
+  (** Get the components of the entities in the result. Will raise an exception
+      if there is not exactly one component of the desired type in each entity.
+  *)
+
+  val as_single : (module Component.S with type t = 'a) -> t -> 'a option
+  (** Get the single component of the single entity in the result. *)
 end
 
 (** {1:queries Queries} *)

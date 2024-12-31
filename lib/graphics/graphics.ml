@@ -12,48 +12,39 @@ module Primitive = Primitive
 let initialize ~gl =
   Ecs.System.make
     (fun q ->
-      let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      context |> Ecs.Query.Result.single)
+      let open Ecs.Query in
+      let c = q (create [ Required Context.C.id ]) in
+      c |> Result.as_single (module Context.C) |> Option.get)
     (Ecs.System.Query
-       (function
-       | Some [ context ] ->
-           let context = context |> Ecs.Component.unpack (module Context.C) in
-           Context.initialize ~gl context;
-           (* Initialize shaders *)
-           Shader.initialize Shader.normal
-       | _ -> assert false))
+       (fun context ->
+         Context.initialize ~gl context;
+         (* Initialize shaders *)
+         Shader.initialize Shader.normal))
 
 let render =
   Ecs.System.make
     (fun q ->
-      let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      context |> Ecs.Query.Result.single)
+      let open Ecs.Query in
+      let c = q (create [ Required Context.C.id ]) in
+      c |> Result.as_single (module Context.C) |> Option.get)
     (Ecs.System.Query
-       (function
-       | Some [ context ] ->
-           let context = context |> Ecs.Component.unpack (module Context.C) in
-           Context.render context;
-           Gl.clear_color 0. 0. 0. 1.;
-           Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
-           check_gl_error ()
-       | _ -> assert false))
+       (fun context ->
+         Context.render context;
+         Gl.clear_color 0. 0. 0. 1.;
+         Gl.clear (Gl.color_buffer_bit lor Gl.depth_buffer_bit);
+         check_gl_error ()))
 
 let handle_events =
   Ecs.System.make
     (fun q ->
-      let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      let window_event =
-        q (Ecs.Query.create [ Ecs.Query.Required Input.Window_event.C.id ])
-      in
-      ( context |> Ecs.Query.Result.single,
-        window_event |> Ecs.Query.Result.single ))
+      let open Ecs.Query in
+      let c = q (create [ Required Context.C.id ]) in
+      let we = q (create [ Required Input.Window_event.C.id ]) in
+      ( c |> Result.as_single (module Context.C),
+        we |> Result.as_single (module Input.Window_event.C) ))
     (Ecs.System.Query
        (function
-       | Some [ context ], Some [ window_event ] ->
-           let context = context |> Ecs.Component.unpack (module Context.C) in
-           let window_event =
-             window_event |> Ecs.Component.unpack (module Input.Window_event.C)
-           in
+       | Some context, Some window_event ->
            List.iter
              (function
                | `Exposed | `Resized ->
@@ -78,13 +69,11 @@ let handle_events =
 let cleanup =
   Ecs.System.make
     (fun q ->
-      let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      let meshes3d = q (Ecs.Query.create [ Ecs.Query.Required Mesh3d.C.id ]) in
-      ( context |> Ecs.Query.Result.entity_single,
-        meshes3d
-        |> Ecs.Query.Result.map (function
-             | [ m ] -> Ecs.Component.unpack (module Mesh3d.C) m
-             | _ -> assert false) ))
+      let open Ecs.Query in
+      let c = q (create [ Required Context.C.id ]) in
+      let m3d = q (create [ Required Mesh3d.C.id ]) in
+      ( c |> Ecs.Query.Result.entity_single,
+        m3d |> Ecs.Query.Result.as_list (module Mesh3d.C) ))
     (Ecs.System.Immediate
        (fun w -> function
          | Some (context_entity, [ context ]), meshes3d ->

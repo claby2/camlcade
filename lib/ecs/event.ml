@@ -31,9 +31,7 @@ end) : S with type event = B.t = struct
   let querier q =
     let open Query in
     let event = q (create [ Required C.id ]) in
-    match event |> Result.single with
-    | Some [ e ] -> Component.unpack (module C) e
-    | _ -> assert false
+    event |> Result.as_single (module C) |> Option.get
 
   let clear_system =
     let clear t = clear t () in

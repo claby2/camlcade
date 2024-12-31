@@ -15,15 +15,11 @@ end
 let rotate =
   let last_timestamp = ref None in
   let query q =
-    let transforms =
-      q
-        (Query.create ~filter:(Query.Filter.With Shape.C.id)
-           [ Query.Required Transform.C.id ])
+    let open Query in
+    let t =
+      q (create ~filter:(Filter.With Shape.C.id) [ Required Transform.C.id ])
     in
-    transforms
-    |> Query.Result.map (function
-         | [ t ] -> Component.unpack (module Transform.C) t
-         | _ -> assert false)
+    t |> Result.as_list (module Transform.C)
   in
   let rotate transforms =
     List.iter

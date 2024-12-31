@@ -13,10 +13,8 @@ let setup_window =
   System.make
     (fun q ->
       let open Query in
-      let context = q (create [ Required Graphics.Context.C.id ]) in
-      match context |> Result.single with
-      | Some [ c ] -> Component.unpack (module Graphics.Context.C) c
-      | _ -> assert false)
+      let c = q (create [ Required Graphics.Context.C.id ]) in
+      Result.as_single (module Graphics.Context.C) c |> Option.get)
     (System.Query
        (fun context ->
          Graphics.Context.set_window_fullscreen context
@@ -36,18 +34,14 @@ let handle_keyboard =
   in
   let query q =
     let open Query in
-    let transform =
+    let t =
       q
         (create ~filter:(Filter.With FirstPersonCamera.C.id)
            [ Required Transform.C.id ])
     in
-    let keyboard = q (create [ Required Input.Keyboard.C.id ]) in
-    ( (match Result.single transform with
-      | Some [ t ] -> Component.unpack (module Transform.C) t
-      | _ -> assert false),
-      match Result.single keyboard with
-      | Some [ k ] -> Component.unpack (module Input.Keyboard.C) k
-      | _ -> assert false )
+    let k = q (create [ Required Input.Keyboard.C.id ]) in
+    ( Result.as_single (module Transform.C) t |> Option.get,
+      Result.as_single (module Input.Keyboard.C) k |> Option.get )
   in
   let move (transform, keyboard) =
     let factor = 0.001 in
@@ -78,18 +72,14 @@ let handle_keyboard =
 let handle_mouse =
   let query q =
     let open Query in
-    let transform =
+    let t =
       q
         (create ~filter:(Filter.With FirstPersonCamera.C.id)
            [ Required Transform.C.id ])
     in
-    let mouse_motion = q (create [ Required Input.Mouse.Motion_event.C.id ]) in
-    ( (match Result.single transform with
-      | Some [ t ] -> Component.unpack (module Transform.C) t
-      | _ -> assert false),
-      match Result.single mouse_motion with
-      | Some [ m ] -> Component.unpack (module Input.Mouse.Motion_event.C) m
-      | _ -> assert false )
+    let mm = q (create [ Required Input.Mouse.Motion_event.C.id ]) in
+    ( Result.as_single (module Transform.C) t |> Option.get,
+      Result.as_single (module Input.Mouse.Motion_event.C) mm |> Option.get )
   in
   let move (transform, mouse_motion) =
     let factor = 0.001 in

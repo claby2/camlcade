@@ -32,16 +32,16 @@ end
 let write_events =
   let query q =
     let open Ecs.Query in
-    let key = q (create [ Required Key_event.C.id ]) in
-    let window = q (create [ Required Window_event.C.id ]) in
-    let mouse_button = q (create [ Required Mouse.Button_event.C.id ]) in
-    let mouse_motion = q (create [ Required Mouse.Motion_event.C.id ]) in
-    ( Result.single key,
-      Result.single window,
-      Result.single mouse_button,
-      Result.single mouse_motion )
+    let k = q (create [ Required Key_event.C.id ]) in
+    let w = q (create [ Required Window_event.C.id ]) in
+    let mb = q (create [ Required Mouse.Button_event.C.id ]) in
+    let mm = q (create [ Required Mouse.Motion_event.C.id ]) in
+    ( k |> Result.as_single (module Key_event.C) |> Option.get,
+      w |> Result.as_single (module Window_event.C) |> Option.get,
+      mb |> Result.as_single (module Mouse.Button_event.C) |> Option.get,
+      mm |> Result.as_single (module Mouse.Motion_event.C) |> Option.get )
   in
-  let write key window mouse_button mouse_motion =
+  let write (key, window, mouse_button, mouse_motion) =
     let event = Sdl.Event.create () in
 
     (* Convenent functions for extracting data from SDL events. *)
@@ -73,16 +73,7 @@ let write_events =
       | _ -> ()
     done
   in
-  Ecs.System.make query
-    (Ecs.System.Query
-       (function
-       | Some [ k ], Some [ w ], Some [ mb ], Some [ mm ] ->
-           let k = k |> Ecs.Component.unpack (module Key_event.C) in
-           let w = w |> Ecs.Component.unpack (module Window_event.C) in
-           let mb = mb |> Ecs.Component.unpack (module Mouse.Button_event.C) in
-           let mm = mm |> Ecs.Component.unpack (module Mouse.Motion_event.C) in
-           write k w mb mm
-       | _ -> assert false))
+  Ecs.System.make query (Ecs.System.Query write)
 
 let plugin w =
   let _state =

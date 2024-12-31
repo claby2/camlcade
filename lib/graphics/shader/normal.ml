@@ -33,27 +33,25 @@ module C = Ecs.Component.Make (struct
 end)
 
 let query q =
+  let open Ecs.Query in
   let cameras =
     q
-      (Ecs.Query.create ~filter:(Ecs.Query.Filter.With Camera.Camera3d.C.id)
-         [
-           Ecs.Query.Required Camera.Projection.C.id;
-           Ecs.Query.Optional Transform.C.id;
-         ])
+      (create ~filter:(Filter.With Camera.Camera3d.C.id)
+         [ Required Camera.Projection.C.id; Optional Transform.C.id ])
   in
   let entities =
     q
-      (Ecs.Query.create ~filter:(Ecs.Query.Filter.With C.id)
-         [ Ecs.Query.Required Mesh3d.C.id; Ecs.Query.Optional Transform.C.id ])
+      (create ~filter:(Filter.With C.id)
+         [ Required Mesh3d.C.id; Optional Transform.C.id ])
   in
   ( cameras
-    |> Ecs.Query.Result.map (function
+    |> Result.map (function
          | [ p; t ] ->
              ( Ecs.Component.unpack (module Camera.Projection.C) p,
                Ecs.Component.unpack_opt (module Transform.C) t )
          | _ -> assert false),
     entities
-    |> Ecs.Query.Result.map (function
+    |> Result.map (function
          | [ m; t ] ->
              ( Ecs.Component.unpack (module Mesh3d.C) m,
                Ecs.Component.unpack_opt (module Transform.C) t )

@@ -43,6 +43,20 @@ module Result = struct
   let filter f = List.filter (fun (_, components) -> f components)
   let entity_filter_map = List.filter_map
   let filter_map f = List.filter_map (fun (_, components) -> f components)
+
+  let as_list (type a) (module C : Component.S with type t = a) (r : t) : a list
+      =
+    map
+      (function
+        | [ c ] -> Component.unpack (module C) c
+        | _ -> invalid_arg "Expected exactly one component in each entity")
+      r
+
+  let as_single (type a) (module C : Component.S with type t = a) (r : t) :
+      a option =
+    match single r with
+    | Some [ c ] -> Some (Component.unpack (module C) c)
+    | _ -> None
 end
 
 type term = Required of Id.Component.t | Optional of Id.Component.t

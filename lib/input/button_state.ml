@@ -59,7 +59,8 @@ module Make (B : Button.S) (E : Ecs.Event.S with type event = B.t) :
       let open Ecs.Query in
       let event = q (create [ Required E.C.id ]) in
       let state = q (create [ Required C.id ]) in
-      (Result.single event, Result.single state)
+      ( Result.as_single (module E.C) event |> Option.get,
+        Result.as_single (module C) state |> Option.get )
     in
     let update event state =
       let keys = E.read event in
@@ -69,11 +70,7 @@ module Make (B : Button.S) (E : Ecs.Event.S with type event = B.t) :
     in
     Ecs.System.make query
       (Ecs.System.Query
-         (function
-         | Some [ event ], Some [ state ] ->
-             let event = event |> Ecs.Component.unpack (module E.C) in
-             let state = state |> Ecs.Component.unpack (module C) in
-             clear_just_pressed state;
-             update event state
-         | _ -> assert false))
+         (fun (event, state) ->
+           clear_just_pressed state;
+           update event state))
 end
