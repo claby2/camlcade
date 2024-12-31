@@ -1,9 +1,13 @@
 open Tsdl
-module Key_event = Key_event
-module Keyboard = Keyboard
+
+module Key_event = Ecs.Event.Make (struct
+  type t = Key.t
+end)
+
+module Keyboard = Button_state.Make (Key) (Key_event)
 
 module Window_event = Ecs.Event.Make (struct
-  type t = Window.t
+  type t = Sdl.Event.window_event_enum
 end)
 
 let write_events =
@@ -15,12 +19,14 @@ let write_events =
   in
   let write key window =
     let event = Sdl.Event.create () in
+    let scan_key e = Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode) in
+    let scan_window e = Sdl.Event.(window_event_enum (get e window_event_id)) in
     while Sdl.poll_event (Some event) do
       match Sdl.Event.(enum (get event typ)) with
       | `Quit -> raise Ecs.World.Quit
-      | `Key_down -> Key_event.write key (Key.Down (Key.scan event))
-      | `Key_up -> Key_event.write key (Key.Up (Key.scan event))
-      | `Window_event -> Window_event.write window (Window.scan event)
+      | `Key_down -> Key_event.write key (Key.Down (scan_key event))
+      | `Key_up -> Key_event.write key (Key.Up (scan_key event))
+      | `Window_event -> Window_event.write window (scan_window event)
       | _ -> ()
     done
   in

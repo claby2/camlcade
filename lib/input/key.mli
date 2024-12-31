@@ -1,7 +1,5 @@
 (** Key events. *)
 
-open Tsdl
-
 type key =
   [ `A
   | `Ac_back
@@ -245,7 +243,4 @@ type key =
   | `Y
   | `Z ]
 
-type t = Down of key | Up of key
-
-val scan : Sdl.event -> key
-val compare : t -> t -> int
+include Button.S with type button = key

@@ -1,5 +1,3 @@
-open Tsdl
-
 type key =
   [ `A
   | `Ac_back
@@ -243,7 +241,6 @@ type key =
   | `Y
   | `Z ]
 
-type t = Down of key | Up of key
-
-let scan e = Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
-let compare = compare
+include Button.Make (struct
+  type t = key
+end)
