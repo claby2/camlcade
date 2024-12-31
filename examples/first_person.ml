@@ -79,20 +79,18 @@ let handle_mouse =
   in
   let move (transform, mouse_motion) =
     let factor = 0.001 in
-    let rotation = Transform.rotation transform in
-    let forward = Transform.forward transform in
-    let up = Transform.local_y transform in
+    let yaw_axis = Math.Vec3.oy in
+    let pitch_axis = Math.Vec3.ox in
     List.iter
       (fun motion ->
         let dx = float_of_int (Input.Mouse.dx motion) in
         let dy = float_of_int (Input.Mouse.dy motion) in
-        let x_axis = Math.Vec3.v 0. (-1.) 0. in
-        let y_axis = Math.Vec3.(neg (cross forward up)) in
+        let yaw = -.dx *. factor in
+        let pitch = -.dy *. factor in
         let new_rotation =
           Math.Quat.(
-            mul
-              (rot3_axis y_axis (dy *. factor))
-              (mul rotation (rot3_axis x_axis (dx *. factor))))
+            mul (rot3_axis yaw_axis yaw)
+              (mul (Transform.rotation transform) (rot3_axis pitch_axis pitch)))
         in
         Transform.set_rotation transform new_rotation)
       (Input.Mouse.Motion_event.read mouse_motion)
