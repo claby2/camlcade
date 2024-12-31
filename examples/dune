@@ -1,3 +1,3 @@
 (executables
- (public_names first_person move shapes)
+ (public_names first_person move shapes spawn)
  (libraries camlcade))
