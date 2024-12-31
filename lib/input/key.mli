@@ -1,6 +1,8 @@
+(** Key events. *)
+
 open Tsdl
 
-type t =
+type key =
   [ `A
   | `Ac_back
   | `Ac_bookmarks
@@ -243,5 +245,7 @@ type t =
   | `Y
   | `Z ]
 
-val of_sdl_event : Sdl.event -> t
+type t = Down of key | Up of key
+
+val scan : Sdl.event -> key
 val compare : t -> t -> int

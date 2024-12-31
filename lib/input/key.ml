@@ -1,6 +1,6 @@
 open Tsdl
 
-type t =
+type key =
   [ `A
   | `Ac_back
   | `Ac_bookmarks
@@ -243,5 +243,7 @@ type t =
   | `Y
   | `Z ]
 
-let of_sdl_event e = Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
+type t = Down of key | Up of key
+
+let scan e = Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
 let compare = compare

@@ -18,17 +18,18 @@ let move_ball =
         (Query.create ~filter:(Query.Filter.With Ball.C.id)
            [ Query.Required Transform.C.id ])
     in
-    let keys = q (Query.create [ Query.Required Input.State.Keys.C.id ]) in
+    let keys = q (Query.create [ Query.Required Input.Keyboard.C.id ]) in
     ( transforms
       |> Query.Result.map (function
            | [ t ] -> Component.unpack (module Transform.C) t
            | _ -> assert false),
-      keys |> Query.Result.single )
+      match Query.Result.single keys with
+      | Some [ k ] -> Component.unpack (module Input.Keyboard.C) k
+      | _ -> assert false )
   in
-  let move transforms keys =
-    let keys = keys |> Component.unpack (module Input.State.Keys.C) in
-    let w_pressed = Input.State.Keys.is_just_pressed keys `W in
-    let s_pressed = Input.State.Keys.is_just_pressed keys `S in
+  let move (transforms, keyboard) =
+    let w_pressed = Input.Keyboard.is_just_pressed keyboard `W in
+    let s_pressed = Input.Keyboard.is_just_pressed keyboard `S in
     List.iter
       (fun transform ->
         let tx, ty, tz = Math.Vec3.to_tuple (Transform.translation transform) in
@@ -38,11 +39,7 @@ let move_ball =
           Transform.set_translation transform (Math.Vec3.v tx ty (tz +. 0.001)))
       transforms
   in
-  System.make query
-    (System.Query
-       (function
-       | transforms, Some [ keys ] -> move transforms keys
-       | _ -> assert false))
+  System.make query (System.Query move)
 
 let plugin w =
   let _camera =

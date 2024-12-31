@@ -1,9 +1,11 @@
+type querier = Query.t -> Query.Result.t
+
 type ('world, 'a) operation =
   | Query of ('a -> unit)
   | Immediate of ('world -> 'a -> unit)
 
 type ('world, 'a) t' = {
-  querier : (Query.t -> Query.Result.t) -> 'a;
+  querier : querier -> 'a;
   operation : ('world, 'a) operation;
 }
 

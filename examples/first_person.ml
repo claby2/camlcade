@@ -27,36 +27,37 @@ let handle_keyboard =
         (create ~filter:(Filter.With FirstPersonCamera.C.id)
            [ Required Transform.C.id ])
     in
-    let keys = q (create [ Required Input.State.Keys.C.id ]) in
-    (transform |> Result.single, keys |> Result.single)
+    let keyboard = q (create [ Required Input.Keyboard.C.id ]) in
+    ( (match Result.single transform with
+      | Some [ t ] -> Component.unpack (module Transform.C) t
+      | _ -> assert false),
+      match Result.single keyboard with
+      | Some [ k ] -> Component.unpack (module Input.Keyboard.C) k
+      | _ -> assert false )
   in
   let factor = 0.001 in
-  let move = function
-    | Some [ transform ], Some [ keys ] ->
-        let transform = transform |> Component.unpack (module Transform.C) in
-        let keys = keys |> Component.unpack (module Input.State.Keys.C) in
-        let is_pressed = Input.State.Keys.is_pressed keys in
-        let w = is_pressed `W in
-        let a = is_pressed `A in
-        let s = is_pressed `S in
-        let d = is_pressed `D in
+  let move (transform, keyboard) =
+    let is_pressed = Input.Keyboard.is_pressed keyboard in
+    let w = is_pressed `W in
+    let a = is_pressed `A in
+    let s = is_pressed `S in
+    let d = is_pressed `D in
 
-        (* Handle WASD movement *)
-        let move = calculate_move transform w a s d in
-        if Math.Vec3.norm move > 0. then
-          Transform.set_translation transform
-            Math.Vec3.(add (Transform.translation transform) (smul factor move));
+    (* Handle WASD movement *)
+    let move = calculate_move transform w a s d in
+    if Math.Vec3.norm move > 0. then
+      Transform.set_translation transform
+        Math.Vec3.(add (Transform.translation transform) (smul factor move));
 
-        let space = is_pressed `Space in
-        let shift = is_pressed `Lshift in
+    let space = is_pressed `Space in
+    let shift = is_pressed `Lshift in
 
-        (* Handle space and shift movement *)
-        let x, y, z = Math.Vec3.to_tuple (Transform.translation transform) in
-        if space then
-          Transform.set_translation transform (Math.Vec3.v x (y +. factor) z);
-        if shift then
-          Transform.set_translation transform (Math.Vec3.v x (y -. factor) z)
-    | _ -> assert false
+    (* Handle space and shift movement *)
+    let x, y, z = Math.Vec3.to_tuple (Transform.translation transform) in
+    if space then
+      Transform.set_translation transform (Math.Vec3.v x (y +. factor) z);
+    if shift then
+      Transform.set_translation transform (Math.Vec3.v x (y -. factor) z)
   in
   System.make query (System.Query move)
 

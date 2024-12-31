@@ -52,26 +52,25 @@ let handle_events =
   Ecs.System.make
     (fun q ->
       let context = q (Ecs.Query.create [ Ecs.Query.Required Context.C.id ]) in
-      let window_events =
-        q
-          (Ecs.Query.create
-             [ Ecs.Query.Required Input.State.Window_events.C.id ])
+      let window_event =
+        q (Ecs.Query.create [ Ecs.Query.Required Input.Window_event.C.id ])
       in
       ( context |> Ecs.Query.Result.single,
-        window_events |> Ecs.Query.Result.single ))
+        window_event |> Ecs.Query.Result.single ))
     (Ecs.System.Query
        (function
-       | Some [ context ], Some [ window_events ] ->
+       | Some [ context ], Some [ window_event ] ->
            let context = context |> Ecs.Component.unpack (module Context.C) in
-           let window_events =
-             window_events
-             |> Ecs.Component.unpack (module Input.State.Window_events.C)
+           let window_event =
+             window_event |> Ecs.Component.unpack (module Input.Window_event.C)
            in
-           Input.State.Window_events.iter window_events (function
-             | `Exposed | `Resized ->
-                 let w, h = Context.get_window_size context in
-                 Gl.viewport 0 0 w h
-             | _ -> ())
+           List.iter
+             (function
+               | `Exposed | `Resized ->
+                   let w, h = Context.get_window_size context in
+                   Gl.viewport 0 0 w h
+               | _ -> ())
+             (Input.Window_event.read window_event)
        | _ ->
            let _key_scancode e =
              Sdl.Scancode.enum Sdl.Event.(get e keyboard_scancode)
