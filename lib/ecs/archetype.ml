@@ -1,167 +1,108 @@
-module Hash = struct
-  type t = int
+open Storage
 
-  let hash l =
-    (* Convert to a string first rather than operate on the list directly
+let calculate_hash l =
+  (* Convert to a string first rather than operate on the list directly
        since Hashtbl.hash stops iterating through a list after 10 elements *)
-    l |> List.sort compare
-    |> List.map (fun v -> v |> Id.Component.to_int |> string_of_int)
-    |> String.concat "" |> Hashtbl.hash
+  l |> List.sort compare
+  |> List.map (fun v -> v |> Id.Component.to_int |> string_of_int)
+  |> String.concat "" |> Hashtbl.hash
 
-  let compare = compare
-end
-
-module Edges = struct
-  module Edge = struct
-    type 'a t = { add : 'a option; remove : 'a option }
-
-    let empty = { add = None; remove = None }
-    let set_add e add = { e with add }
-    let set_remove e remove = { e with remove }
-    let add e = e.add
-    let remove e = e.remove
-  end
-
-  type ('a, 'b) t = ('a, 'b Edge.t) Hashtbl.t
-
-  let empty () = Hashtbl.create 0
-
-  let find_add_opt e key =
-    match Hashtbl.find_opt e key with
-    | Some edge -> Edge.add edge
-    | None -> None
-
-  let find_remove_opt e key =
-    match Hashtbl.find_opt e key with
-    | Some edge -> Edge.remove edge
-    | None -> None
-
-  let replace_add e key value =
-    match Hashtbl.find_opt e key with
-    | Some edge -> Hashtbl.replace e key (Edge.set_add edge value)
-    | None -> Hashtbl.add e key (Edge.set_add Edge.empty value)
-
-  let replace_remove e key value =
-    match Hashtbl.find_opt e key with
-    | Some edge -> Hashtbl.replace e key (Edge.set_remove edge value)
-    | None -> Hashtbl.add e key (Edge.set_remove Edge.empty value)
-end
+type operation = Add of Id.Component.t | Remove of Id.Component.t
 
 type t = {
-  hash : Hash.t;
   components : Id.ComponentSet.t;
+  hash : int;
+  (* table[component.id][entity.id] = entity's component *)
+  table : Component.packed Sparse_set.t Sparse_set.t;
+  add_hashes : (Id.Component.t, int) Hashtbl.t;
+  remove_hashes : (Id.Component.t, int) Hashtbl.t;
   mutable entities : Id.EntitySet.t;
-  (* TODO: Use SparseSet *)
-  table : (Id.Entity.t, Component.packed) Hashtbl.t array;
-  (* edges[component] = (option<add>, option<remove>) *)
-  edges : (Id.Component.t, Hash.t) Edges.t;
 }
 
-let empty () =
-  {
-    hash = Hashtbl.hash [];
-    components = Id.ComponentSet.empty;
-    entities = Id.EntitySet.empty;
-    table = Array.make 0 (Hashtbl.create 0);
-    edges = Edges.empty ();
-  }
-
 let create components =
-  let max_id = Id.ComponentSet.max_elt components |> Id.Component.to_int in
-  {
-    hash = Hash.hash (components |> Id.ComponentSet.to_list);
+  let table = Sparse_set.create () in
+  Id.ComponentSet.iter
+    (fun cid ->
+      Sparse_set.set table (Id.Component.to_int cid) (Sparse_set.create ()))
     components;
+  {
+    components;
+    hash = calculate_hash (Id.ComponentSet.to_list components);
+    table;
+    add_hashes = Hashtbl.create 0;
+    remove_hashes = Hashtbl.create 0;
     entities = Id.EntitySet.empty;
-    table = Array.init (max_id + 1) (fun _ -> Hashtbl.create 0);
-    edges = Edges.empty ();
   }
 
+let empty () = create Id.ComponentSet.empty
 let hash a = a.hash
-
-let hash_with_component a c =
-  if Id.ComponentSet.mem c a.components then a.hash
-  else
-    match Edges.find_add_opt a.edges c with
-    | Some hash -> hash
-    | None ->
-        let new_components =
-          Id.ComponentSet.add c a.components |> Id.ComponentSet.to_list
-        in
-        let hash = Hash.hash new_components in
-        Edges.replace_add a.edges c (Some hash);
-        hash
-
-let hash_without_component a c =
-  if not (Id.ComponentSet.mem c a.components) then a.hash
-  else
-    match Edges.find_remove_opt a.edges c with
-    | Some hash -> hash
-    | None ->
-        let new_components =
-          Id.ComponentSet.remove c a.components |> Id.ComponentSet.to_list
-        in
-        let hash = Hash.hash new_components in
-        Edges.replace_remove a.edges c (Some hash);
-        hash
-
 let components a = a.components
 let entities a = a.entities
 
-let get_component a e c =
-  let c = Id.Component.to_int c in
-  if c >= Array.length a.table then None
-  else
-    let table = Array.get a.table c in
-    Hashtbl.find_opt table e
+let query a eid cid =
+  let eid = Id.Entity.to_int eid in
+  let cid = Id.Component.to_int cid in
+  Option.bind (Sparse_set.get a.table cid) (fun c -> Sparse_set.get c eid)
 
-let get_entity a e =
-  if not (Id.EntitySet.mem e a.entities) then raise Not_found;
-
-  let components = Id.ComponentSet.to_list a.components in
-  components |> List.map (fun cid -> (cid, get_component a e cid |> Option.get))
-
-(* Remove an entity from the archetype and return its components *)
-let extract_entity a e =
-  let extracted = get_entity a e in
-  (* Now we know all components exist, we can safely remove the entity *)
-  extracted
-  |> List.iter (fun (cid, _) ->
+let remove a eid =
+  let remove () = a.entities <- Id.EntitySet.remove eid a.entities in
+  let eid = Id.Entity.to_int eid in
+  a.components
+  |> Id.ComponentSet.iter (fun cid ->
          let cid = Id.Component.to_int cid in
-         let table = Array.get a.table cid in
-         Hashtbl.remove table e);
+         match Sparse_set.get a.table cid with
+         | None -> failwith "invariant violated, table missing component"
+         | Some c -> Sparse_set.remove c eid |> ignore);
+  remove ()
 
-  (* Finally, remove the entity from the entity set *)
-  a.entities <- Id.EntitySet.remove e a.entities;
-
-  (* Return the packed components *)
-  extracted |> List.map snd
-
-(* Add an entity to the archetype with the given components *)
-let add_entity a e components =
-  (* Convert components to a hash table from component id to component value *)
-  let components =
-    Hashtbl.of_seq
-      (List.to_seq components |> Seq.map (fun c -> (Component.id c, c)))
+let add a eid components =
+  let add () = a.entities <- Id.EntitySet.add eid a.entities in
+  let eid = Id.Entity.to_int eid in
+  let validate_components l =
+    Id.ComponentSet.equal a.components
+      (l |> List.map Component.id |> Id.ComponentSet.of_list)
   in
+  if not (validate_components components) then
+    invalid_arg "tried to add foreign component";
 
-  (* Check that the given components match the archetype's components *)
-  let expected_count = Id.ComponentSet.cardinal a.components in
-  let actual_count = Hashtbl.length components in
-  if expected_count <> actual_count then
-    invalid_arg "number of components do not match";
-  Id.ComponentSet.iter
-    (fun cid ->
-      if not (Hashtbl.mem components cid) then
-        invalid_arg "found invalid component")
-    a.components;
+  components
+  |> List.iter (fun comp ->
+         let cid = Id.Component.to_int (Component.id comp) in
+         match Sparse_set.get a.table cid with
+         | None -> failwith "invariant violated, table missing component"
+         | Some c -> Sparse_set.set c eid comp);
+  add ()
 
-  (* Add the components to the archetype *)
-  Hashtbl.iter
-    (fun cid c ->
-      let cid = Id.Component.to_int cid in
-      let table = Array.get a.table cid in
-      Hashtbl.replace table e c)
-    components;
+let replace a eid component =
+  let eid = Id.Entity.to_int eid in
+  let cid = Id.Component.to_int (Component.id component) in
+  match Sparse_set.get a.table cid with
+  | None -> invalid_arg "component not found"
+  | Some c -> Sparse_set.set c eid component
 
-  (* Add the entity to the entity set *)
-  a.entities <- Id.EntitySet.add e a.entities
+let next_hash a = function
+  | Add cid -> (
+      if Id.ComponentSet.mem cid a.components then a.hash
+      else
+        match Hashtbl.find_opt a.add_hashes cid with
+        | Some h -> h
+        | None ->
+            let h =
+              calculate_hash
+                (Id.ComponentSet.to_list (Id.ComponentSet.add cid a.components))
+            in
+            Hashtbl.add a.add_hashes cid h;
+            h)
+  | Remove cid -> (
+      if not (Id.ComponentSet.mem cid a.components) then a.hash
+      else
+        match Hashtbl.find_opt a.remove_hashes cid with
+        | Some h -> h
+        | None ->
+            let h =
+              calculate_hash
+                (Id.ComponentSet.to_list
+                   (Id.ComponentSet.remove cid a.components))
+            in
+            Hashtbl.add a.remove_hashes cid h;
+            h)

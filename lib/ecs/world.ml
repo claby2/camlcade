@@ -1,19 +1,15 @@
-module ArchetypeHashSet = Set.Make (Archetype.Hash)
+module ArchetypeHashSet = Set.Make (Int)
 
 type t = {
   empty_archetype : Archetype.t;
-  archetype_index : (Archetype.Hash.t, Archetype.t) Hashtbl.t;
-  (* TODO: entity id -> (archetype, row) *)
-  entity_index : (Id.Entity.t, Archetype.Hash.t) Hashtbl.t;
-  (* TODO: component id -> (archetype id -> column) *)
+  archetype_index : (int, Archetype.t) Hashtbl.t;
+  entity_index : (Id.Entity.t, int) Hashtbl.t;
   component_index : (Id.Component.t, ArchetypeHashSet.t) Hashtbl.t;
   scheduler : t System.t Scheduler.t;
   mutable quit : bool;
 }
 
-(* Create a new empty world *)
 let create () =
-  (* Start with the empty archetype in the archetype index *)
   let archetype_index = Hashtbl.create 0 in
   let empty_archetype = Archetype.empty () in
   Hashtbl.add archetype_index (Archetype.hash empty_archetype) empty_archetype;
@@ -29,58 +25,77 @@ let create () =
 let get_archetype w entity =
   Hashtbl.find w.archetype_index (Hashtbl.find w.entity_index entity)
 
-(* Add a new entity and return its id *)
 let add_entity w =
   let entity = Id.Entity.next () in
   Hashtbl.add w.entity_index entity (Archetype.hash w.empty_archetype);
-  Archetype.add_entity w.empty_archetype entity [];
+  Archetype.add w.empty_archetype entity [];
   entity
 
-(* Remove an entity from the world *)
 let remove_entity w entity =
-  let archetype = get_archetype w entity in
-  Archetype.extract_entity archetype entity |> ignore;
+  let arch = get_archetype w entity in
+  Archetype.remove arch entity;
   Hashtbl.remove w.entity_index entity
 (* TODO: Should we remove the archetype if it's empty? i.e. should it be
    removed from the archetype index and/or its hash be removed from component index? *)
 
 let entities w = w.entity_index |> Hashtbl.to_seq_keys |> List.of_seq
 
-let create_archetype_with_components w components =
-  let new_archetype = Archetype.create components in
-  if Hashtbl.mem w.archetype_index (Archetype.hash new_archetype) then
-    Hashtbl.find w.archetype_index (Archetype.hash new_archetype)
-  else (
-    Hashtbl.add w.archetype_index (Archetype.hash new_archetype) new_archetype;
-    new_archetype)
+let get_new_archetype w old_arch operation =
+  let next_hash = Archetype.next_hash old_arch operation in
+  match Hashtbl.find_opt w.archetype_index next_hash with
+  | Some a -> a
+  | None ->
+      let cid, operation =
+        match operation with
+        | Archetype.Add cid -> (cid, Id.ComponentSet.add)
+        | Archetype.Remove cid -> (cid, Id.ComponentSet.remove)
+      in
+      let a =
+        Archetype.create (operation cid (Archetype.components old_arch))
+      in
+      Hashtbl.add w.archetype_index next_hash a;
+      a
+
+let extract_from_archetype arch entity components =
+  let l =
+    components |> Id.ComponentSet.to_list
+    |> List.map (fun cid -> Archetype.query arch entity cid |> Option.get)
+  in
+  Archetype.remove arch entity;
+  l
+
+let update_component_index w arch =
+  let operation =
+    if Id.EntitySet.is_empty (Archetype.entities arch) then
+      ArchetypeHashSet.remove
+    else ArchetypeHashSet.add
+  in
+  Archetype.components arch
+  |> Id.ComponentSet.iter (fun cid ->
+         let arch_set =
+           Option.value
+             (Hashtbl.find_opt w.component_index cid)
+             ~default:ArchetypeHashSet.empty
+         in
+         Hashtbl.replace w.component_index cid
+           (operation (Archetype.hash arch) arch_set))
 
 (* Add a component to an entity *)
 let add_component w component entity =
-  let archetype = get_archetype w entity in
-  let new_archetype_hash =
-    Archetype.hash_with_component archetype (Component.id component)
+  let old_arch = get_archetype w entity in
+  let new_arch =
+    get_new_archetype w old_arch (Archetype.Add (Component.id component))
   in
-  let new_archetype =
-    match Hashtbl.find_opt w.archetype_index new_archetype_hash with
-    | Some a -> a
-    | None ->
-        create_archetype_with_components w
-          (Archetype.components archetype
-          |> Id.ComponentSet.add (Component.id component))
-  in
-  (* Move entity from old archetype to new archetype *)
-  Archetype.add_entity new_archetype entity
-    (Archetype.extract_entity archetype entity @ [ component ]);
-  Hashtbl.replace w.archetype_index (Archetype.hash new_archetype) new_archetype;
-  Hashtbl.replace w.entity_index entity (Archetype.hash new_archetype);
-  Archetype.components new_archetype
-  |> Id.ComponentSet.iter (fun c ->
-         let new_archetype_set =
-           match Hashtbl.find_opt w.component_index c with
-           | None -> ArchetypeHashSet.singleton (Archetype.hash new_archetype)
-           | Some set -> ArchetypeHashSet.add (Archetype.hash new_archetype) set
-         in
-         Hashtbl.replace w.component_index c new_archetype_set)
+  if Archetype.hash old_arch = Archetype.hash new_arch then
+    Archetype.replace old_arch entity component
+  else (
+    Hashtbl.replace w.entity_index entity (Archetype.hash new_arch);
+    Archetype.add new_arch entity
+      (component
+      :: extract_from_archetype old_arch entity (Archetype.components old_arch)
+      );
+    update_component_index w old_arch;
+    update_component_index w new_arch)
 
 let with_component : type a.
     t -> (module Component.S with type t = a) -> a -> Id.Entity.t -> Id.Entity.t
@@ -89,36 +104,31 @@ let with_component : type a.
   add_component w (Component.pack (module C) component) entity;
   entity
 
-(* Remove a component from an entity *)
 let remove_component w component_id entity =
-  let archetype = get_archetype w entity in
-  let new_archetype_hash =
-    Archetype.hash_without_component archetype component_id
+  let old_arch = get_archetype w entity in
+  let new_arch = get_new_archetype w old_arch (Archetype.Remove component_id) in
+  let components =
+    extract_from_archetype old_arch entity (Archetype.components new_arch)
   in
-  let new_archetype =
-    match Hashtbl.find_opt w.archetype_index new_archetype_hash with
-    | Some a -> a
-    | None ->
-        create_archetype_with_components w
-          (Archetype.components archetype |> Id.ComponentSet.remove component_id)
-  in
-  Archetype.add_entity new_archetype entity
-    (Archetype.extract_entity archetype entity
-    |> List.filter (fun c -> Component.id c <> component_id));
-  Hashtbl.replace w.archetype_index (Archetype.hash new_archetype) new_archetype;
-  Hashtbl.replace w.entity_index entity (Archetype.hash new_archetype);
-  let new_archetype_set =
-    match Hashtbl.find_opt w.component_index component_id with
-    | None -> ArchetypeHashSet.singleton (Archetype.hash new_archetype)
-    | Some set -> ArchetypeHashSet.add (Archetype.hash new_archetype) set
-  in
-  Hashtbl.replace w.component_index component_id new_archetype_set
+  Archetype.add new_arch entity components;
+  Hashtbl.replace w.entity_index entity (Archetype.hash new_arch);
 
-(* Get the value of a specific component for a given entity if it exists *)
+  let arch_set =
+    match Hashtbl.find_opt w.component_index component_id with
+    | None -> ArchetypeHashSet.singleton (Archetype.hash new_arch)
+    | Some set ->
+        if Id.EntitySet.is_empty (Archetype.entities old_arch) then
+          ArchetypeHashSet.remove (Archetype.hash old_arch) set
+        else set
+  in
+  Hashtbl.replace w.component_index component_id arch_set;
+  update_component_index w old_arch;
+  update_component_index w new_arch
+
 let get_component w entity component =
   try
     let archetype = get_archetype w entity in
-    Archetype.get_component archetype entity component
+    Archetype.query archetype entity component
   with Not_found -> None
 
 let add_system w schedule system =

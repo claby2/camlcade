@@ -32,7 +32,7 @@ lib
 ├── graphics  # OpenGL-based renderer
 ├── input     # Input and event handling
 ├── math      # Math utilities
-├── storage   # Sparse storage (currently unused)
+├── storage   # Sparse storage
 └── transform # Transform component
 ```
 

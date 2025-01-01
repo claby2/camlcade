@@ -1,4 +1,4 @@
 (library
  (public_name camlcade.ecs)
  (name ecs)
- (libraries math))
+ (libraries math storage))

@@ -73,12 +73,12 @@ let evaluate q archetypes =
     let matches_filter a = Filter.matches q.filter (Archetype.components a) in
 
     let fetch_components a e =
-      let get_component = Archetype.get_component a in
+      let get_component = Archetype.query a e in
       List.map
         (function
-          | Required c -> get_component e c |> Option.get
+          | Required c -> get_component c |> Option.get
           | Optional c ->
-              get_component e c
+              get_component c
               |> Option.value
                    ~default:(Component.pack (module Component.None.C) ()))
         q.terms

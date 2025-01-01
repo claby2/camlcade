@@ -1,41 +1,41 @@
-module Hash : sig
-  type t = int
+(** Archetype storage and manipulation. *)
 
-  val hash : Id.Component.t list -> t
-  val compare : t -> t -> int
-end
-
-(**/**)
-
-module Edges : sig
-  type ('a, 'b) t
-
-  val empty : unit -> ('a, 'b) t
-  val find_add_opt : ('a, 'b) t -> 'a -> 'b option
-  val find_remove_opt : ('a, 'b) t -> 'a -> 'b option
-  val replace_add : ('a, 'b) t -> 'a -> 'b option -> unit
-  val replace_remove : ('a, 'b) t -> 'a -> 'b option -> unit
-end
-
-(**/**)
+(** Indicate an operation to add or remove a component. *)
+type operation = Add of Id.Component.t | Remove of Id.Component.t
 
 type t
 
-val empty : unit -> t
 val create : Id.ComponentSet.t -> t
+(** Creates a new archetype with the given components. *)
 
-(* Hash *)
-val hash : t -> Hash.t
-val hash_with_component : t -> Id.Component.t -> Hash.t
-val hash_without_component : t -> Id.Component.t -> Hash.t
+val empty : unit -> t
+(** Creates an archetype with no components. *)
 
-(* Components *)
+val hash : t -> int
+(** Returns the hash of the archetype. *)
+
 val components : t -> Id.ComponentSet.t
+(** Returns the components of the archetype. *)
 
-val get_component :
-  t -> Id.Entity.t -> Id.Component.t -> Component.packed option
-
-(* Entities *)
 val entities : t -> Id.EntitySet.t
-val extract_entity : t -> Id.Entity.t -> Component.packed list
-val add_entity : t -> Id.Entity.t -> Component.packed list -> unit
+(** Returns the entities in the archetype. *)
+
+val query : t -> Id.Entity.t -> Id.Component.t -> Component.packed option
+(** Queries the archetype for an entity's component. If the entity does not have
+    the component, returns [None]. *)
+
+val remove : t -> Id.Entity.t -> unit
+(** Removes an entity from the archetype. No change if the entity is not in the
+    archetype. *)
+
+val add : t -> Id.Entity.t -> Component.packed list -> unit
+(** Adds an entity to the archetype with the given components. The components
+    must match the archetype's components exactly. *)
+
+val replace : t -> Id.Entity.t -> Component.packed -> unit
+(** Replaces an entity's component in the archetype. The entity must already be
+    in the archetype and the component be one of the archetype's components. *)
+
+val next_hash : t -> operation -> int
+(** Returns the hash of the archetype after the given operation. Caches results
+    for future calls. *)
