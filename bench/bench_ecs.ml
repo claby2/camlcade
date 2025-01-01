@@ -35,23 +35,22 @@ let t2 =
         World.with_component world (module Foo.C) () entity |> ignore
       done)
 
-let big_world =
-  let world = World.create () in
-  for _ = 1 to 500 do
-    World.add_entity world
-    |> World.with_component world (module Foo.C) ()
-    |> World.with_component world (module Bar.C) ()
-    |> ignore
-  done;
-  world
-
 let t3 =
-  Bench.Test.create ~name:"big query" (fun () ->
-      let results =
-        World.evaluate_query big_world
-          (Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ])
-      in
-      assert (List.length results = 500))
+  Bench.Test.create_with_initialization ~name:"big query" (fun _ ->
+      let param = 100_000 in
+      let world = World.create () in
+      for _ = 1 to param do
+        World.add_entity world
+        |> World.with_component world (module Foo.C) ()
+        |> World.with_component world (module Bar.C) ()
+        |> ignore
+      done;
+      fun () ->
+        let results =
+          World.evaluate_query world
+            (Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ])
+        in
+        assert (List.length results = param))
 
 let t4 =
   Bench.Test.create ~name:"register and fetch systems" (fun () ->
