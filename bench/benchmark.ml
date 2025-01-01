@@ -7,6 +7,7 @@ let main () =
          ("ecs", Bench_ecs.command);
          ("graphics", Bench_graphics.command);
          ("math", Bench_math.command);
+         ("storage", Bench_storage.command);
        ])
 
 let () = main ()

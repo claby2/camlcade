@@ -1,17 +1,4 @@
 (executable
+  (public_name bench)
   (name benchmark)
   (libraries core_unix.command_unix core core_bench camlcade))
-
-; This allows running the benchmarks with `dune build @bench-ecs`.
-(rule
-  (alias bench-ecs)
-  (deps benchmark.exe)
-  (action (run ./benchmark.exe ecs -quota 1)))
-(rule
-  (alias bench-graphics)
-  (deps benchmark.exe)
-  (action (run ./benchmark.exe graphics -quota 1)))
-(rule
-  (alias bench-math)
-  (deps benchmark.exe)
-  (action (run ./benchmark.exe math -quota 1)))

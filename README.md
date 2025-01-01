@@ -40,5 +40,5 @@ lib
 
 - Build: `dune build`
 - Test: `dune test`
-- Benchmark: `dune build @bench-<benchmark>` (e.g. `dune build @bench-ecs`, see [bench/dune](bench/dune))
+- Benchmark: `dune exec bench`
 - Documentation: `dune build @doc` (see `_build/default/_doc/_html/index.html`)
