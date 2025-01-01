@@ -80,29 +80,26 @@ let replace a eid component =
   | None -> invalid_arg "component not found"
   | Some c -> Sparse_set.set c eid component
 
-let next_hash a = function
-  | Add cid -> (
+let next_hash a op =
+  let find_or_compute tbl key compute =
+    match Hashtbl.find_opt tbl key with
+    | Some h -> h
+    | None ->
+        let h = compute () in
+        Hashtbl.add tbl key h;
+        h
+  in
+  match op with
+  | Add cid ->
       if Id.ComponentSet.mem cid a.components then a.hash
       else
-        match Hashtbl.find_opt a.add_hashes cid with
-        | Some h -> h
-        | None ->
-            let h =
-              calculate_hash
-                (Id.ComponentSet.to_list (Id.ComponentSet.add cid a.components))
-            in
-            Hashtbl.add a.add_hashes cid h;
-            h)
-  | Remove cid -> (
+        find_or_compute a.add_hashes cid (fun () ->
+            calculate_hash
+              (Id.ComponentSet.to_list (Id.ComponentSet.add cid a.components)))
+  | Remove cid ->
       if not (Id.ComponentSet.mem cid a.components) then a.hash
       else
-        match Hashtbl.find_opt a.remove_hashes cid with
-        | Some h -> h
-        | None ->
-            let h =
-              calculate_hash
-                (Id.ComponentSet.to_list
-                   (Id.ComponentSet.remove cid a.components))
-            in
-            Hashtbl.add a.remove_hashes cid h;
-            h)
+        find_or_compute a.remove_hashes cid (fun () ->
+            calculate_hash
+              (Id.ComponentSet.to_list
+                 (Id.ComponentSet.remove cid a.components)))
