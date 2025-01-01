@@ -80,7 +80,6 @@ let update_component_index w arch =
          Hashtbl.replace w.component_index cid
            (operation (Archetype.hash arch) arch_set))
 
-(* Add a component to an entity *)
 let add_component w component entity =
   let old_arch = get_archetype w entity in
   let new_arch =
@@ -107,23 +106,15 @@ let with_component : type a.
 let remove_component w component_id entity =
   let old_arch = get_archetype w entity in
   let new_arch = get_new_archetype w old_arch (Archetype.Remove component_id) in
-  let components =
-    extract_from_archetype old_arch entity (Archetype.components new_arch)
-  in
-  Archetype.add new_arch entity components;
-  Hashtbl.replace w.entity_index entity (Archetype.hash new_arch);
-
-  let arch_set =
-    match Hashtbl.find_opt w.component_index component_id with
-    | None -> ArchetypeHashSet.singleton (Archetype.hash new_arch)
-    | Some set ->
-        if Id.EntitySet.is_empty (Archetype.entities old_arch) then
-          ArchetypeHashSet.remove (Archetype.hash old_arch) set
-        else set
-  in
-  Hashtbl.replace w.component_index component_id arch_set;
-  update_component_index w old_arch;
-  update_component_index w new_arch
+  if Archetype.hash old_arch = Archetype.hash new_arch then ()
+  else
+    let components =
+      extract_from_archetype old_arch entity (Archetype.components new_arch)
+    in
+    Archetype.add new_arch entity components;
+    Hashtbl.replace w.entity_index entity (Archetype.hash new_arch);
+    update_component_index w old_arch;
+    update_component_index w new_arch
 
 let get_component w entity component =
   try
