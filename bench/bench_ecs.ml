@@ -23,17 +23,15 @@ let t1 =
       World.add_entity world |> World.remove_entity world)
 
 let t2 =
-  Bench.Test.create ~name:"component repeated add and remove" (fun () ->
+  Bench.Test.create_with_initialization
+    ~name:"component repeated add and remove" (fun _ ->
       let world = World.create () in
-      let entity =
-        World.add_entity world
-        |> World.with_component world (module Foo.C) ()
-        |> World.with_component world (module Bar.C) ()
-      in
-      for _ = 1 to 50 do
-        World.remove_component world Foo.C.id entity;
-        World.with_component world (module Foo.C) () entity |> ignore
-      done)
+      let entity = World.add_entity world in
+      fun () ->
+        for _ = 1 to 50 do
+          World.with_component world (module Foo.C) () entity |> ignore;
+          World.remove_component world Foo.C.id entity
+        done)
 
 let t3 =
   Bench.Test.create_with_initialization ~name:"big query" (fun _ ->
