@@ -34,6 +34,17 @@ let load_matrix3fv mat =
 let load_matrix4fv mat =
   load_matrixnfv 4 (Math.Mat4.to_list mat) Gl.uniform_matrix4fv
 
+let load_uniform1i i pid loc = Gl.uniform1i (Gl.get_uniform_location pid loc) i
+let load_uniform1f i pid loc = Gl.uniform1f (Gl.get_uniform_location pid loc) i
+
+let load_uniform3fv v pid loc =
+  let loc = Gl.get_uniform_location pid loc in
+  let value = bigarray_create Bigarray.float32 3 in
+  value.{0} <- Math.Vec3.x v;
+  value.{1} <- Math.Vec3.y v;
+  value.{2} <- Math.Vec3.z v;
+  Gl.uniform3fv loc 1 value
+
 let check_gl_error () =
   let error = ref (Gl.get_error ()) in
   let errored = ref false in

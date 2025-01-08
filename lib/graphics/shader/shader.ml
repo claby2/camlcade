@@ -1,6 +1,7 @@
 open Tgl4
 open Util
 module Normal = Normal
+module Phong = Phong
 
 type program =
   | Staged of { frag : string; vert : string }
@@ -32,6 +33,12 @@ let initialize s =
       Gl.attach_shader pid vert;
       Gl.attach_shader pid frag;
       Gl.link_program pid;
+      let get_program_int pid e = get_int (Gl.get_programiv pid e) in
+      let link_ok = get_program_int pid Gl.link_status = Gl.true_ in
+      (if not link_ok then
+         let len = get_program_int pid Gl.info_log_length in
+         let log = get_string len (Gl.get_program_info_log pid len None) in
+         failwith (Printf.sprintf "link error: %s" log));
       Gl.delete_shader vert;
       Gl.delete_shader frag;
       Ok pid >>= fun pid -> s := Initialized { pid }
@@ -68,3 +75,10 @@ let shade_normal =
        (fun (cameras, entities) ->
          with_shader normal (fun pid ->
              List.iter (fun (p, t) -> shade pid entities p t) cameras)))
+
+let phong = create ~frag:Phong.frag ~vert:Phong.vert
+
+let shade_phong =
+  Ecs.System.make Phong.query
+    (Ecs.System.Query
+       (fun context -> with_shader phong (fun pid -> Phong.render pid context)))

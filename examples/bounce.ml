@@ -72,21 +72,34 @@ let restart_ball =
   System.make query (System.Query restart)
 
 let plugin w =
+  let open Graphics in
+  let _sun =
+    World.add_entity w
+    |> World.with_component w
+         (module Light.Point.C)
+         (Light.Point.create ~color:(Math.Vec3.v 0. 0. 0.) ())
+    |> World.with_component w
+         (module Transform.C)
+         Transform.(identity () |> with_translation (Math.Vec3.v 0. 10. 0.))
+  in
   let _ground =
     World.add_entity w
     |> World.with_component w
-         (module Graphics.Mesh3d.C)
-         (Graphics.Mesh3d.of_primitive
-            (Graphics.Primitive.Cuboid.create ~x_length:100. ~y_length:0.1
-               ~z_length:100. ()))
-    |> World.with_component w (module Graphics.Shader.Normal.C) ()
+         (module Mesh3d.C)
+         (Mesh3d.of_primitive
+            (Primitive.Cuboid.create ~x_length:100. ~y_length:0.1 ~z_length:100.
+               ()))
+    |> World.with_component w
+         (module Material.C)
+         (Material.create ~ambient:(Math.Vec3.v 1. 0. 0.) ())
+    |> World.with_component w (module Shader.Phong.C) ()
   in
   let _camera =
     World.add_entity w
-    |> World.with_component w (module Graphics.Camera3d.C) ()
+    |> World.with_component w (module Camera3d.C) ()
     |> World.with_component w
-         (module Graphics.Camera.Projection.C)
-         (Graphics.Camera.Projection.perspective ())
+         (module Camera.Projection.C)
+         (Camera.Projection.perspective ())
     |> World.with_component w
          (module Transform.C)
          Transform.(
@@ -97,10 +110,13 @@ let plugin w =
   let _ball =
     World.add_entity w
     |> World.with_component w
-         (module Graphics.Mesh3d.C)
-         (Graphics.Mesh3d.of_primitive
-            (Graphics.Primitive.Sphere.create ~param1:50 ~param2:50 ()))
-    |> World.with_component w (module Graphics.Shader.Normal.C) ()
+         (module Mesh3d.C)
+         (Mesh3d.of_primitive
+            (Primitive.Sphere.create ~param1:50 ~param2:50 ()))
+    |> World.with_component w (module Shader.Phong.C) ()
+    |> World.with_component w
+         (module Material.C)
+         (Material.create ~ambient:(Math.Vec3.v 0. 0. 1.) ())
     |> World.with_component w
          (module Transform.C)
          Transform.(

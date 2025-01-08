@@ -1,13 +1,15 @@
 open Util
 open Tgl4
 open Tsdl
-module Context = Context
 module Camera = Camera
 module Camera3d = Camera.Camera3d
+module Context = Context
+module Light = Light
+module Material = Material
 module Mesh3d = Mesh3d
+module Primitive = Primitive
 module Shader = Shader
 module Vertex_mesh = Vertex_mesh
-module Primitive = Primitive
 
 let initialize ~gl =
   Ecs.System.make
@@ -21,7 +23,8 @@ let initialize ~gl =
        (fun context ->
          Context.initialize ~gl context;
          (* Initialize shaders *)
-         Shader.initialize Shader.normal))
+         Shader.initialize Shader.normal;
+         Shader.initialize Shader.phong))
 
 let render =
   Ecs.System.make
@@ -102,5 +105,6 @@ let plugin w =
   Ecs.World.add_system w Ecs.Scheduler.Update render;
   Ecs.World.add_system w Ecs.Scheduler.Update handle_events;
   Ecs.World.add_system w Ecs.Scheduler.Update Shader.shade_normal;
+  Ecs.World.add_system w Ecs.Scheduler.Update Shader.shade_phong;
 
   Ecs.World.add_system w Ecs.Scheduler.Last cleanup
