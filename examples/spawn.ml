@@ -26,8 +26,7 @@ let add_random_ball w =
 let handle_spawn =
   let query w =
     let _, (mb, ()) =
-      World.query w Query.(Required (module Input.Mouse.Button.C) ^^ QNil)
-      |> List.hd
+      World.query w Query.(Req (module Input.Mouse.Button.C) @ Nil) |> List.hd
     in
     mb
   in

@@ -29,9 +29,7 @@ end) : S with type event = B.t = struct
   end)
 
   let querier w =
-    let _, (t, ()) =
-      World.query w Query.(Required (module C) ^^ QNil) |> List.hd
-    in
+    let _, (t, ()) = World.query w Query.(Req (module C) @ Nil) |> List.hd in
     t
 
   let clear_system =

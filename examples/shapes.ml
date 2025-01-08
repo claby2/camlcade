@@ -17,7 +17,7 @@ let rotate =
   let query w =
     let transforms =
       World.query ~filter:(Query.Filter.With Shape.C.id) w
-        Query.(Required (module Transform.C) ^^ QNil)
+        Query.(Req (module Transform.C) @ Nil)
       |> List.map (fun (_, (t, ())) -> t)
     in
     transforms

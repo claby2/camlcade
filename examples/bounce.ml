@@ -27,13 +27,11 @@ end
 
 let simulate_ball =
   let query w =
-    let _, (b, (t, ())) =
-      World.query w
-        Query.(
-          Required (module Transform.C) ^^ Required (module Ball.C) ^^ QNil)
+    let _, (t, (b, ())) =
+      World.query w Query.(Req (module Transform.C) @ Req (module Ball.C) @ Nil)
       |> List.hd
     in
-    (b, t)
+    (t, b)
   in
   let dt = 0.00000005 in
   let simulate (transform, ball) =
@@ -57,13 +55,10 @@ let simulate_ball =
 let restart_ball =
   let query w =
     let _, (k, ()) =
-      World.query w Query.(Required (module Input.Keyboard.C) ^^ QNil)
-      |> List.hd
+      World.query w Query.(Req (module Input.Keyboard.C) @ Nil) |> List.hd
     in
     let _, (t, (b, ())) =
-      World.query w
-        Query.(
-          Required (module Transform.C) ^^ Required (module Ball.C) ^^ QNil)
+      World.query w Query.(Req (module Transform.C) @ Req (module Ball.C) @ Nil)
       |> List.hd
     in
     (k, t, b)

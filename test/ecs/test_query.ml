@@ -33,25 +33,20 @@ let test_filter_matches () =
 let test_required_components () =
   let open Query in
   let required_eq q l =
-    Id.ComponentSet.equal (required q) (Id.ComponentSet.of_list l)
+    Id.ComponentSet.equal (required_ids q) (Id.ComponentSet.of_list l)
   in
-  let q = QNil in
+  let q = Nil in
   assert (required_eq q []);
-  let q = Required (module Foo.C) ^^ QNil in
+  let q = Req (module Foo.C) @ Nil in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Required (module Foo.C) ^^ Optional (module Bar.C) ^^ QNil in
+  let q = Req (module Foo.C) @ Opt (module Bar.C) @ Nil in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Optional (module Bar.C) ^^ Optional (module Baz.C) ^^ QNil in
+  let q = Opt (module Bar.C) @ Opt (module Baz.C) @ Nil in
   assert (required_eq q []);
 
-  let q =
-    Required (module Foo.C)
-    ^^ Optional (module Baz.C)
-    ^^ Required (module Bar.C)
-    ^^ QNil
-  in
+  let q = Req (module Foo.C) @ Opt (module Baz.C) @ Req (module Bar.C) @ Nil in
   assert (required_eq q [ Foo.C.id; Bar.C.id ])
 
 let test_evaluate () =

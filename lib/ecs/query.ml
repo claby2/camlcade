@@ -7,7 +7,6 @@ module Filter = struct
     | Or of t * t
     | Wildcard
 
-  (* Returns true if the given component set matches the filter *)
   let matches f components =
     let rec aux f components =
       match f with
@@ -22,18 +21,15 @@ module Filter = struct
 end
 
 type _ term =
-  | Required : (module Component.S with type t = 'a) -> 'a term
-  | Optional : (module Component.S with type t = 'a) -> 'a option term
+  | Req : (module Component.S with type t = 'a) -> 'a term
+  | Opt : (module Component.S with type t = 'a) -> 'a option term
 
-type _ t = QNil : unit t | QCons : 'a term * 'b t -> ('a * 'b) t
-(* TODO: ALTERNATIVELY
-type _ t = QSingle : 'a term -> 'a t | QCons : 'a term * 'b t -> ('a * 'b) t*)
+type _ t = Nil : unit t | Cons : 'a term * 'b t -> ('a * 'b) t
 
-let rec required : type a. a t -> _ = function
-  | QNil -> Id.ComponentSet.empty
-  | QCons (Required (module C), rest) ->
-      Id.ComponentSet.add C.id (required rest)
-  | QCons (Optional (module C), rest) -> required rest
+let rec required_ids : type a. a t -> _ = function
+  | Nil -> Id.ComponentSet.empty
+  | Cons (Req (module C), rest) -> Id.ComponentSet.add C.id (required_ids rest)
+  | Cons (Opt (module C), rest) -> required_ids rest
 
 let evaluate : type a.
     ?filter:Filter.t -> a t -> Archetype.t list -> (Id.Entity.t * a) list =
@@ -42,13 +38,13 @@ let evaluate : type a.
    fun q a e ->
     let get_component = Archetype.query a e in
     match q with
-    | QNil -> ()
-    | QCons (Required (module C), rest) ->
+    | Nil -> ()
+    | Cons (Req (module C), rest) ->
         let c =
           get_component C.id |> Option.get |> Component.unpack (module C)
         in
         (c, fetch rest a e)
-    | QCons (Optional (module C), rest) ->
+    | Cons (Opt (module C), rest) ->
         (* TODO: Rethink this maybe *)
         let c =
           get_component C.id
@@ -57,9 +53,9 @@ let evaluate : type a.
         in
         (c, fetch rest a e)
   in
-  let required = required query in
+  let required_ids = required_ids query in
   let is_candidate a =
-    Id.ComponentSet.subset required (Archetype.components a)
+    Id.ComponentSet.subset required_ids (Archetype.components a)
     && Filter.matches filter (Archetype.components a)
   in
 
@@ -70,8 +66,4 @@ let evaluate : type a.
 
   archetypes |> List.filter is_candidate |> List.concat_map build_result
 
-type _ set =
-  | Single : 'a. 'a t -> (Id.Entity.t * 'a) list set
-  | Cons : 'a t * 'b set -> ('a t * 'b) set
-
-let ( ^^ ) comp rest = QCons (comp, rest) (* Infix for QCons *)
+let ( @ ) comp rest = Cons (comp, rest) (* Infix for QCons *)

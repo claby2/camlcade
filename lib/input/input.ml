@@ -33,18 +33,16 @@ let write_events =
   let query w =
     let open Ecs in
     let _, (ke, ()) =
-      World.query w Query.(Required (module Key_event.C) ^^ QNil) |> List.hd
+      World.query w Query.(Req (module Key_event.C) @ Nil) |> List.hd
     in
     let _, (we, ()) =
-      World.query w Query.(Required (module Window_event.C) ^^ QNil) |> List.hd
+      World.query w Query.(Req (module Window_event.C) @ Nil) |> List.hd
     in
     let _, (mb, ()) =
-      World.query w Query.(Required (module Mouse.Button_event.C) ^^ QNil)
-      |> List.hd
+      World.query w Query.(Req (module Mouse.Button_event.C) @ Nil) |> List.hd
     in
     let _, (mm, ()) =
-      World.query w Query.(Required (module Mouse.Motion_event.C) ^^ QNil)
-      |> List.hd
+      World.query w Query.(Req (module Mouse.Motion_event.C) @ Nil) |> List.hd
     in
     (ke, we, mb, mm)
   in

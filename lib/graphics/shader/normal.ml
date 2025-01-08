@@ -36,15 +36,11 @@ let query w =
   let open Ecs in
   let cameras =
     World.query ~filter:(Query.Filter.With Camera.Camera3d.C.id) w
-      Query.(
-        Required (module Camera.Projection.C)
-        ^^ Optional (module Transform.C)
-        ^^ QNil)
+      Query.(Req (module Camera.Projection.C) @ Opt (module Transform.C) @ Nil)
   in
   let entities =
     World.query ~filter:(Query.Filter.With C.id) w
-      Query.(
-        Required (module Mesh3d.C) ^^ Optional (module Transform.C) ^^ QNil)
+      Query.(Req (module Mesh3d.C) @ Opt (module Transform.C) @ Nil)
   in
   ( List.map (fun (_, (c, (t, ()))) -> (c, t)) cameras,
     List.map (fun (_, (m, (t, ()))) -> (m, t)) entities )

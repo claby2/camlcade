@@ -58,10 +58,10 @@ module Make (B : Button.S) (E : Ecs.Event.S with type event = B.t) :
     let query w =
       let open Ecs in
       let _, (event, ()) =
-        World.query w Query.(Required (module E.C) ^^ QNil) |> List.hd
+        World.query w Query.(Req (module E.C) @ Nil) |> List.hd
       in
       let _, (state, ()) =
-        World.query w Query.(Required (module C) ^^ QNil) |> List.hd
+        World.query w Query.(Req (module C) @ Nil) |> List.hd
       in
       (event, state)
     in

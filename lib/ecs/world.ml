@@ -126,7 +126,7 @@ let add_system w schedule system =
   Scheduler.register w.scheduler schedule system
 
 let query ?(filter = Query.Filter.Wildcard) w (query : 'a Query.t) =
-  let required = Query.required query in
+  let required_ids = Query.required_ids query in
   let intersection_opt acc c =
     let set =
       match Hashtbl.find_opt w.component_index c with
@@ -138,14 +138,14 @@ let query ?(filter = Query.Filter.Wildcard) w (query : 'a Query.t) =
     | None -> Some set
   in
   let candidate_archetypes =
-    if Id.ComponentSet.is_empty required then
+    if Id.ComponentSet.is_empty required_ids then
       (* There are no required components, so the candidate archetypes is the set of all archetypes *)
       Hashtbl.to_seq_values w.archetype_index |> List.of_seq
     else
       (* There are required components, so the candidate archetypes is the intersection of the sets
          of archetypes that contain each required component *)
       (* TODO: Check this *)
-      required |> Id.ComponentSet.to_list
+      required_ids |> Id.ComponentSet.to_list
       |> List.fold_left intersection_opt None
       |> Option.value ~default:ArchetypeHashSet.empty
       |> ArchetypeHashSet.to_list

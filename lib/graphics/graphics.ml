@@ -14,7 +14,7 @@ let initialize ~gl =
     (fun w ->
       let open Ecs in
       let _, (c, ()) =
-        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+        World.query w Query.(Req (module Context.C) @ Nil) |> List.hd
       in
       c)
     (Ecs.System.Query
@@ -28,7 +28,7 @@ let render =
     (fun w ->
       let open Ecs in
       let _, (c, ()) =
-        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+        World.query w Query.(Req (module Context.C) @ Nil) |> List.hd
       in
       c)
     (Ecs.System.Query
@@ -42,10 +42,8 @@ let handle_events =
   Ecs.System.make
     (fun w ->
       let open Ecs in
-      let c = World.query w Query.(Required (module Context.C) ^^ QNil) in
-      let we =
-        World.query w Query.(Required (module Input.Window_event.C) ^^ QNil)
-      in
+      let c = World.query w Query.(Req (module Context.C) @ Nil) in
+      let we = World.query w Query.(Req (module Input.Window_event.C) @ Nil) in
       ( List.nth_opt c 0 |> Option.map (fun (_, (c, ())) -> c),
         List.nth_opt we 0 |> Option.map (fun (_, (we, ())) -> we) ))
     (Ecs.System.Query
@@ -77,9 +75,9 @@ let cleanup =
     (fun w ->
       let open Ecs in
       let c_entity, (c, ()) =
-        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+        World.query w Query.(Req (module Context.C) @ Nil) |> List.hd
       in
-      let m3d = World.query w Query.(Required (module Mesh3d.C) ^^ QNil) in
+      let m3d = World.query w Query.(Req (module Mesh3d.C) @ Nil) in
       (c_entity, c, List.map (fun (_, (m3d, ())) -> m3d) m3d))
     (Ecs.System.Immediate
        (fun w ->

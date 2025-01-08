@@ -13,8 +13,7 @@ let setup_window =
   System.make
     (fun w ->
       let _, (c, ()) =
-        World.query w Query.(Required (module Graphics.Context.C) ^^ QNil)
-        |> List.hd
+        World.query w Query.(Req (module Graphics.Context.C) @ Nil) |> List.hd
       in
       c)
     (System.Query
@@ -37,12 +36,11 @@ let handle_keyboard =
   let query w =
     let _, (t, ()) =
       World.query ~filter:(Query.Filter.With FirstPersonCamera.C.id) w
-        Query.(Required (module Transform.C) ^^ QNil)
+        Query.(Req (module Transform.C) @ Nil)
       |> List.hd
     in
     let _, (k, ()) =
-      World.query w Query.(Required (module Input.Keyboard.C) ^^ QNil)
-      |> List.hd
+      World.query w Query.(Req (module Input.Keyboard.C) @ Nil) |> List.hd
     in
     (t, k)
   in
@@ -76,11 +74,11 @@ let handle_mouse =
   let query w =
     let _, (t, ()) =
       World.query ~filter:(Query.Filter.With FirstPersonCamera.C.id) w
-        Query.(Required (module Transform.C) ^^ QNil)
+        Query.(Req (module Transform.C) @ Nil)
       |> List.hd
     in
     let _, (mm, ()) =
-      World.query w Query.(Required (module Input.Mouse.Motion_event.C) ^^ QNil)
+      World.query w Query.(Req (module Input.Mouse.Motion_event.C) @ Nil)
       |> List.hd
     in
     (t, mm)
