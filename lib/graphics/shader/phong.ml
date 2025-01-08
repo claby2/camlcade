@@ -233,7 +233,6 @@ let load_lights pid point_lights directional_lights spot_lights =
 
 let render pid
     { cameras; entities; point_lights; directional_lights; spot_lights } =
-  (* print number of lights *)
   let render_entity ?(transform = Transform.identity ()) m3d mat =
     let transform = Transform.compute_matrix transform in
     load_matrix4fv transform pid "modelMatrix";

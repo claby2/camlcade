@@ -73,14 +73,15 @@ let restart_ball =
 
 let plugin w =
   let open Graphics in
-  let _sun =
+  let _light =
     World.add_entity w
     |> World.with_component w
          (module Light.Point.C)
-         (Light.Point.create ~color:(Math.Vec3.v 0. 0. 0.) ())
+         (Light.Point.create ~color:(Math.Vec3.v 0.9 0.2 0.2)
+            ~attenuation:(Math.Vec3.v 0.8 0.2 0.) ())
     |> World.with_component w
          (module Transform.C)
-         Transform.(identity () |> with_translation (Math.Vec3.v 0. 10. 0.))
+         Transform.(identity () |> with_translation (Math.Vec3.v 0. 5. 5.))
   in
   let _ground =
     World.add_entity w
@@ -91,7 +92,7 @@ let plugin w =
                ()))
     |> World.with_component w
          (module Material.C)
-         (Material.create ~ambient:(Math.Vec3.v 1. 0. 0.) ())
+         (Material.create ~ambient:(Math.Vec3.v 0.2 0. 0.) ~shininess:1. ())
     |> World.with_component w (module Shader.Phong.C) ()
   in
   let _camera =
@@ -116,7 +117,7 @@ let plugin w =
     |> World.with_component w (module Shader.Phong.C) ()
     |> World.with_component w
          (module Material.C)
-         (Material.create ~ambient:(Math.Vec3.v 0. 0. 1.) ())
+         (Material.create ~ambient:(Math.Vec3.v 0.1 0.5 0.2) ~shininess:1. ())
     |> World.with_component w
          (module Transform.C)
          Transform.(
