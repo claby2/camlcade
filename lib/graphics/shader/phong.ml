@@ -191,11 +191,11 @@ let load_lights pid point_lights directional_lights spot_lights =
   List.iter
     (fun (point, transform) ->
       load_light 0 (Light.Point.color point) (Light.Point.attenuation point);
-      (match transform with
-      | Some transform ->
-          let pos = Transform.translation transform in
-          load_uniform3fv pos pid (light_loc "pos")
-      | None -> ());
+      Option.iter
+        (fun t ->
+          let pos = Transform.translation t in
+          load_uniform3fv pos pid (light_loc "pos"))
+        transform;
       light_index := !light_index + 1)
     point_lights;
 
@@ -204,12 +204,12 @@ let load_lights pid point_lights directional_lights spot_lights =
       load_light 1
         (Light.Directional.color directional)
         (Light.Directional.attenuation directional);
-      (match transform with
-      | Some transform ->
-          let rot = Transform.rotation transform in
+      Option.iter
+        (fun t ->
+          let rot = Transform.rotation t in
           let dir = Math.Quat.apply3 rot (Math.Vec3.v 0. 0. (-1.)) in
-          load_uniform3fv dir pid (light_loc "dir")
-      | None -> ());
+          load_uniform3fv dir pid (light_loc "dir"))
+        transform;
       light_index := !light_index + 1)
     directional_lights;
 
@@ -218,14 +218,14 @@ let load_lights pid point_lights directional_lights spot_lights =
       load_light 2 (Light.Spot.color spot) (Light.Spot.attenuation spot);
       load_uniform1f (Light.Spot.angle spot) pid (light_loc "angle");
       load_uniform1f (Light.Spot.penumbra spot) pid (light_loc "penumbra");
-      (match transform with
-      | Some transform ->
-          let pos = Transform.translation transform in
+      Option.iter
+        (fun t ->
+          let pos = Transform.translation t in
           load_uniform3fv pos pid (light_loc "pos");
-          let rot = Transform.rotation transform in
+          let rot = Transform.rotation t in
           let dir = Math.Quat.apply3 rot (Math.Vec3.v 0. 0. (-1.)) in
-          load_uniform3fv dir pid (light_loc "dir")
-      | None -> ());
+          load_uniform3fv dir pid (light_loc "dir"))
+        transform;
       light_index := !light_index + 1)
     spot_lights;
 
