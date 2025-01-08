@@ -24,10 +24,12 @@ let add_random_ball w =
   |> ignore
 
 let handle_spawn =
-  let query q =
-    let open Query in
-    let mb = q (create [ Required Input.Mouse.Button.C.id ]) in
-    Result.as_single (module Input.Mouse.Button.C) mb |> Option.get
+  let query w =
+    let _, (mb, ()) =
+      World.query w Query.(Required (module Input.Mouse.Button.C) ^^ QNil)
+      |> List.hd
+    in
+    mb
   in
   let spawn world mouse_button =
     if Input.Mouse.Button.is_just_pressed mouse_button `Left then (

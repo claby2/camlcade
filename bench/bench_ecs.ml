@@ -45,8 +45,8 @@ let t3 =
       done;
       fun () ->
         let results =
-          World.evaluate_query world
-            (Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ])
+          World.query world
+            Query.(Required (module Foo.C) ^^ Required (module Bar.C) ^^ QNil)
         in
         assert (List.length results = param))
 
@@ -55,12 +55,7 @@ let t4 =
       let registry = Scheduler.create () in
       for _ = 1 to 100 do
         let system results = ignore results in
-        Scheduler.register registry Scheduler.Update
-          ( [|
-              Query.create [ Query.Required Foo.C.id; Query.Required Bar.C.id ];
-              Query.create [ Query.Required Foo.C.id ];
-            |],
-            system )
+        Scheduler.register registry Scheduler.Update system
       done;
       Scheduler.fetch registry Scheduler.Update |> ignore)
 

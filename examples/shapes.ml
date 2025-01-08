@@ -14,12 +14,13 @@ end
 
 let rotate =
   let last_timestamp = ref None in
-  let query q =
-    let open Query in
-    let t =
-      q (create ~filter:(Filter.With Shape.C.id) [ Required Transform.C.id ])
+  let query w =
+    let transforms =
+      World.query ~filter:(Query.Filter.With Shape.C.id) w
+        Query.(Required (module Transform.C) ^^ QNil)
+      |> List.map (fun (_, (t, ())) -> t)
     in
-    t |> Result.as_list (module Transform.C)
+    transforms
   in
   let rotate transforms =
     List.iter

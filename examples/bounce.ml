@@ -26,14 +26,14 @@ module Ball = struct
 end
 
 let simulate_ball =
-  let query q =
-    let open Query in
-    let b = q (create [ Required Transform.C.id; Required Ball.C.id ]) in
-    match b |> Result.single with
-    | Some [ t; b ] ->
-        ( t |> Component.unpack (module Transform.C),
-          b |> Component.unpack (module Ball.C) )
-    | _ -> assert false
+  let query w =
+    let _, (b, (t, ())) =
+      World.query w
+        Query.(
+          Required (module Transform.C) ^^ Required (module Ball.C) ^^ QNil)
+      |> List.hd
+    in
+    (b, t)
   in
   let dt = 0.00000005 in
   let simulate (transform, ball) =
@@ -55,18 +55,20 @@ let simulate_ball =
   System.make query (System.Query simulate)
 
 let restart_ball =
-  let query q =
-    let open Query in
-    let k = q (create [ Required Input.Keyboard.C.id ]) in
-    let b = q (create [ Required Transform.C.id; Required Ball.C.id ]) in
-    ( Result.as_single (module Input.Keyboard.C) k |> Option.get,
-      match Result.single b with
-      | Some [ t; b ] ->
-          ( Component.unpack (module Transform.C) t,
-            Component.unpack (module Ball.C) b )
-      | _ -> assert false )
+  let query w =
+    let _, (k, ()) =
+      World.query w Query.(Required (module Input.Keyboard.C) ^^ QNil)
+      |> List.hd
+    in
+    let _, (t, (b, ())) =
+      World.query w
+        Query.(
+          Required (module Transform.C) ^^ Required (module Ball.C) ^^ QNil)
+      |> List.hd
+    in
+    (k, t, b)
   in
-  let restart (keyboard, (transform, ball)) =
+  let restart (keyboard, transform, ball) =
     let is_pressed = Input.Keyboard.is_pressed keyboard in
     if is_pressed `R then (
       Transform.set_translation transform (Math.Vec3.v 0. maximum_height 0.);

@@ -32,30 +32,22 @@ module C = Ecs.Component.Make (struct
   type inner = unit
 end)
 
-let query q =
-  let open Ecs.Query in
+let query w =
+  let open Ecs in
   let cameras =
-    q
-      (create ~filter:(Filter.With Camera.Camera3d.C.id)
-         [ Required Camera.Projection.C.id; Optional Transform.C.id ])
+    World.query ~filter:(Query.Filter.With Camera.Camera3d.C.id) w
+      Query.(
+        Required (module Camera.Projection.C)
+        ^^ Optional (module Transform.C)
+        ^^ QNil)
   in
   let entities =
-    q
-      (create ~filter:(Filter.With C.id)
-         [ Required Mesh3d.C.id; Optional Transform.C.id ])
+    World.query ~filter:(Query.Filter.With C.id) w
+      Query.(
+        Required (module Mesh3d.C) ^^ Optional (module Transform.C) ^^ QNil)
   in
-  ( cameras
-    |> Result.map (function
-         | [ p; t ] ->
-             ( Ecs.Component.unpack (module Camera.Projection.C) p,
-               Ecs.Component.unpack_opt (module Transform.C) t )
-         | _ -> assert false),
-    entities
-    |> Result.map (function
-         | [ m; t ] ->
-             ( Ecs.Component.unpack (module Mesh3d.C) m,
-               Ecs.Component.unpack_opt (module Transform.C) t )
-         | _ -> assert false) )
+  ( List.map (fun (_, (c, (t, ()))) -> (c, t)) cameras,
+    List.map (fun (_, (m, (t, ()))) -> (m, t)) entities )
 
 let render ?(transform = Transform.identity ())
     ?(camera_transform = Transform.identity ()) pid projection mesh3d =

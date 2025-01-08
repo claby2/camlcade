@@ -9,7 +9,7 @@ module type S = sig
 
   module C : Component.S with type t = t
 
-  val querier : System.querier -> t
+  val querier : World.t -> t
   val clear_system : World.t System.t
 end
 
@@ -28,10 +28,11 @@ end) : S with type event = B.t = struct
     type inner = t
   end)
 
-  let querier q =
-    let open Query in
-    let event = q (create [ Required C.id ]) in
-    event |> Result.as_single (module C) |> Option.get
+  let querier w =
+    let _, (t, ()) =
+      World.query w Query.(Required (module C) ^^ QNil) |> List.hd
+    in
+    t
 
   let clear_system =
     let clear t = clear t () in

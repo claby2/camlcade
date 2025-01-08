@@ -125,8 +125,8 @@ let get_component w entity component =
 let add_system w schedule system =
   Scheduler.register w.scheduler schedule system
 
-let evaluate_query w (query : Query.t) =
-  let required_components = Query.required_components query in
+let query ?(filter = Query.Filter.Wildcard) w (query : 'a Query.t) =
+  let required = Query.required query in
   let intersection_opt acc c =
     let set =
       match Hashtbl.find_opt w.component_index c with
@@ -138,25 +138,26 @@ let evaluate_query w (query : Query.t) =
     | None -> Some set
   in
   let candidate_archetypes =
-    if List.is_empty required_components then
+    if Id.ComponentSet.is_empty required then
       (* There are no required components, so the candidate archetypes is the set of all archetypes *)
       Hashtbl.to_seq_values w.archetype_index |> List.of_seq
     else
       (* There are required components, so the candidate archetypes is the intersection of the sets
          of archetypes that contain each required component *)
-      required_components
+      (* TODO: Check this *)
+      required |> Id.ComponentSet.to_list
       |> List.fold_left intersection_opt None
       |> Option.value ~default:ArchetypeHashSet.empty
       |> ArchetypeHashSet.to_list
       |> List.map (Hashtbl.find w.archetype_index)
   in
-  Query.evaluate query candidate_archetypes
+  Query.evaluate ~filter query candidate_archetypes
 
 exception Quit
 
 let run_systems w schedule =
   let run_system system =
-    try System.run w (evaluate_query w) system with Quit -> w.quit <- true
+    try System.run w system with Quit -> w.quit <- true
   in
   Scheduler.fetch w.scheduler schedule |> List.iter run_system
 

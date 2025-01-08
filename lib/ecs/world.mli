@@ -20,15 +20,10 @@ val get_component :
   t -> Id.Entity.t -> Id.Component.t -> Component.packed option
 
 (* Systems *)
+val query : ?filter:Query.Filter.t -> t -> 'a Query.t -> (Id.Entity.t * 'a) list
 val add_system : t -> Scheduler.schedule -> t System.t -> unit
 val run_systems : t -> Scheduler.schedule -> unit
 
 exception Quit
 
 val has_quit : t -> bool
-
-(**/**)
-
-val evaluate_query : t -> Query.t -> Query.Result.t
-
-(**/**)

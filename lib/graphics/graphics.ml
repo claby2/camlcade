@@ -11,10 +11,12 @@ module Primitive = Primitive
 
 let initialize ~gl =
   Ecs.System.make
-    (fun q ->
-      let open Ecs.Query in
-      let c = q (create [ Required Context.C.id ]) in
-      c |> Result.as_single (module Context.C) |> Option.get)
+    (fun w ->
+      let open Ecs in
+      let _, (c, ()) =
+        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+      in
+      c)
     (Ecs.System.Query
        (fun context ->
          Context.initialize ~gl context;
@@ -23,10 +25,12 @@ let initialize ~gl =
 
 let render =
   Ecs.System.make
-    (fun q ->
-      let open Ecs.Query in
-      let c = q (create [ Required Context.C.id ]) in
-      c |> Result.as_single (module Context.C) |> Option.get)
+    (fun w ->
+      let open Ecs in
+      let _, (c, ()) =
+        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+      in
+      c)
     (Ecs.System.Query
        (fun context ->
          Context.render context;
@@ -36,12 +40,14 @@ let render =
 
 let handle_events =
   Ecs.System.make
-    (fun q ->
-      let open Ecs.Query in
-      let c = q (create [ Required Context.C.id ]) in
-      let we = q (create [ Required Input.Window_event.C.id ]) in
-      ( c |> Result.as_single (module Context.C),
-        we |> Result.as_single (module Input.Window_event.C) ))
+    (fun w ->
+      let open Ecs in
+      let c = World.query w Query.(Required (module Context.C) ^^ QNil) in
+      let we =
+        World.query w Query.(Required (module Input.Window_event.C) ^^ QNil)
+      in
+      ( List.nth_opt c 0 |> Option.map (fun (_, (c, ())) -> c),
+        List.nth_opt we 0 |> Option.map (fun (_, (we, ())) -> we) ))
     (Ecs.System.Query
        (function
        | Some context, Some window_event ->
@@ -68,24 +74,22 @@ let handle_events =
 
 let cleanup =
   Ecs.System.make
-    (fun q ->
-      let open Ecs.Query in
-      let c = q (create [ Required Context.C.id ]) in
-      let m3d = q (create [ Required Mesh3d.C.id ]) in
-      ( c |> Ecs.Query.Result.entity_single,
-        m3d |> Ecs.Query.Result.as_list (module Mesh3d.C) ))
+    (fun w ->
+      let open Ecs in
+      let c_entity, (c, ()) =
+        World.query w Query.(Required (module Context.C) ^^ QNil) |> List.hd
+      in
+      let m3d = World.query w Query.(Required (module Mesh3d.C) ^^ QNil) in
+      (c_entity, c, List.map (fun (_, (m3d, ())) -> m3d) m3d))
     (Ecs.System.Immediate
-       (fun w -> function
-         | Some (context_entity, [ context ]), meshes3d ->
-             (* Cleanup context *)
-             let context = context |> Ecs.Component.unpack (module Context.C) in
-             Context.destroy context;
-             Ecs.World.remove_entity w context_entity;
-             (* Destroy shaders *)
-             Shader.destroy Shader.normal;
-             (* Destroy meshes *)
-             List.iter Mesh3d.destroy meshes3d
-         | _ -> assert false))
+       (fun w ->
+         fun (context_entity, context, meshes3d) ->
+          Context.destroy context;
+          Ecs.World.remove_entity w context_entity;
+          (* Destroy shaders *)
+          Shader.destroy Shader.normal;
+          (* Destroy meshes *)
+          List.iter Mesh3d.destroy meshes3d))
 
 let plugin w =
   let add_context w =

@@ -2,7 +2,7 @@ val frag : string
 val vert : string
 
 val query :
-  Ecs.System.querier ->
+  Ecs.World.t ->
   (Camera.Projection.t * Transform.t option) list
   * (Mesh3d.t * Transform.t option) list
 (** [query q] returns the necessary components for the render function. *)

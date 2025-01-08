@@ -4,7 +4,6 @@
     test_query
     test_world_entities
     test_world_components
-    test_world_systems
-    test_world_query)
+    test_world_systems)
   (libraries camlcade))
 

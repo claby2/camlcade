@@ -55,12 +55,15 @@ module Make (B : Button.S) (E : Ecs.Event.S with type event = B.t) :
   end)
 
   let update_system =
-    let query q =
-      let open Ecs.Query in
-      let event = q (create [ Required E.C.id ]) in
-      let state = q (create [ Required C.id ]) in
-      ( Result.as_single (module E.C) event |> Option.get,
-        Result.as_single (module C) state |> Option.get )
+    let query w =
+      let open Ecs in
+      let _, (event, ()) =
+        World.query w Query.(Required (module E.C) ^^ QNil) |> List.hd
+      in
+      let _, (state, ()) =
+        World.query w Query.(Required (module C) ^^ QNil) |> List.hd
+      in
+      (event, state)
     in
     let update event state =
       let keys = E.read event in

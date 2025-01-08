@@ -11,10 +11,12 @@ end
 
 let setup_window =
   System.make
-    (fun q ->
-      let open Query in
-      let c = q (create [ Required Graphics.Context.C.id ]) in
-      Result.as_single (module Graphics.Context.C) c |> Option.get)
+    (fun w ->
+      let _, (c, ()) =
+        World.query w Query.(Required (module Graphics.Context.C) ^^ QNil)
+        |> List.hd
+      in
+      c)
     (System.Query
        (fun context ->
          Graphics.Context.set_window_fullscreen context
@@ -32,16 +34,17 @@ let handle_keyboard =
     (if d then move := Math.Vec3.(add !move (normalize (cross forward up))));
     Math.Vec3.normalize !move
   in
-  let query q =
-    let open Query in
-    let t =
-      q
-        (create ~filter:(Filter.With FirstPersonCamera.C.id)
-           [ Required Transform.C.id ])
+  let query w =
+    let _, (t, ()) =
+      World.query ~filter:(Query.Filter.With FirstPersonCamera.C.id) w
+        Query.(Required (module Transform.C) ^^ QNil)
+      |> List.hd
     in
-    let k = q (create [ Required Input.Keyboard.C.id ]) in
-    ( Result.as_single (module Transform.C) t |> Option.get,
-      Result.as_single (module Input.Keyboard.C) k |> Option.get )
+    let _, (k, ()) =
+      World.query w Query.(Required (module Input.Keyboard.C) ^^ QNil)
+      |> List.hd
+    in
+    (t, k)
   in
   let move (transform, keyboard) =
     let factor = 0.001 in
@@ -70,16 +73,17 @@ let handle_keyboard =
   System.make query (System.Query move)
 
 let handle_mouse =
-  let query q =
-    let open Query in
-    let t =
-      q
-        (create ~filter:(Filter.With FirstPersonCamera.C.id)
-           [ Required Transform.C.id ])
+  let query w =
+    let _, (t, ()) =
+      World.query ~filter:(Query.Filter.With FirstPersonCamera.C.id) w
+        Query.(Required (module Transform.C) ^^ QNil)
+      |> List.hd
     in
-    let mm = q (create [ Required Input.Mouse.Motion_event.C.id ]) in
-    ( Result.as_single (module Transform.C) t |> Option.get,
-      Result.as_single (module Input.Mouse.Motion_event.C) mm |> Option.get )
+    let _, (mm, ()) =
+      World.query w Query.(Required (module Input.Mouse.Motion_event.C) ^^ QNil)
+      |> List.hd
+    in
+    (t, mm)
   in
   let move (transform, mouse_motion) =
     let factor = 0.001 in

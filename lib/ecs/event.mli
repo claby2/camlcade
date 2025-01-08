@@ -18,7 +18,7 @@ module type S = sig
 
   module C : Component.S with type t = t
 
-  val querier : System.querier -> t
+  val querier : World.t -> t
   (** Querier uses a querier to get a single event component.
 
       This will panic if there are multiple event components. *)

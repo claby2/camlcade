@@ -30,16 +30,23 @@ module Mouse = struct
 end
 
 let write_events =
-  let query q =
-    let open Ecs.Query in
-    let k = q (create [ Required Key_event.C.id ]) in
-    let w = q (create [ Required Window_event.C.id ]) in
-    let mb = q (create [ Required Mouse.Button_event.C.id ]) in
-    let mm = q (create [ Required Mouse.Motion_event.C.id ]) in
-    ( k |> Result.as_single (module Key_event.C) |> Option.get,
-      w |> Result.as_single (module Window_event.C) |> Option.get,
-      mb |> Result.as_single (module Mouse.Button_event.C) |> Option.get,
-      mm |> Result.as_single (module Mouse.Motion_event.C) |> Option.get )
+  let query w =
+    let open Ecs in
+    let _, (ke, ()) =
+      World.query w Query.(Required (module Key_event.C) ^^ QNil) |> List.hd
+    in
+    let _, (we, ()) =
+      World.query w Query.(Required (module Window_event.C) ^^ QNil) |> List.hd
+    in
+    let _, (mb, ()) =
+      World.query w Query.(Required (module Mouse.Button_event.C) ^^ QNil)
+      |> List.hd
+    in
+    let _, (mm, ()) =
+      World.query w Query.(Required (module Mouse.Motion_event.C) ^^ QNil)
+      |> List.hd
+    in
+    (ke, we, mb, mm)
   in
   let write (key, window, mouse_button, mouse_motion) =
     let event = Sdl.Event.create () in

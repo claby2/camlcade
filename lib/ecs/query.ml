@@ -21,72 +21,57 @@ module Filter = struct
     aux f components
 end
 
-module Result = struct
-  type entity = Id.Entity.t * Component.packed list
-  type t = entity list
+type _ term =
+  | Required : (module Component.S with type t = 'a) -> 'a term
+  | Optional : (module Component.S with type t = 'a) -> 'a option term
 
-  let entity_single r =
-    match r with
-    | [ (entity, components) ] -> Some (entity, components)
-    | _ -> None
+type _ t = QNil : unit t | QCons : 'a term * 'b t -> ('a * 'b) t
+(* TODO: ALTERNATIVELY
+type _ t = QSingle : 'a term -> 'a t | QCons : 'a term * 'b t -> ('a * 'b) t*)
 
-  let single r =
-    match entity_single r with
-    | Some (_, components) -> Some components
-    | None -> None
+let rec required : type a. a t -> _ = function
+  | QNil -> Id.ComponentSet.empty
+  | QCons (Required (module C), rest) ->
+      Id.ComponentSet.add C.id (required rest)
+  | QCons (Optional (module C), rest) -> required rest
 
-  let entity_iter = List.iter
-  let iter f = List.iter (fun (_, components) -> f components)
-  let entity_map = List.map
-  let map f = List.map (fun (_, components) -> f components)
-  let entity_filter = List.filter
-  let filter f = List.filter (fun (_, components) -> f components)
-  let entity_filter_map = List.filter_map
-  let filter_map f = List.filter_map (fun (_, components) -> f components)
+let evaluate : type a.
+    ?filter:Filter.t -> a t -> Archetype.t list -> (Id.Entity.t * a) list =
+ fun ?(filter = Filter.Wildcard) query archetypes ->
+  let rec fetch : type a. a t -> Archetype.t -> Id.Entity.t -> a =
+   fun q a e ->
+    let get_component = Archetype.query a e in
+    match q with
+    | QNil -> ()
+    | QCons (Required (module C), rest) ->
+        let c =
+          get_component C.id |> Option.get |> Component.unpack (module C)
+        in
+        (c, fetch rest a e)
+    | QCons (Optional (module C), rest) ->
+        (* TODO: Rethink this maybe *)
+        let c =
+          get_component C.id
+          |> Option.value ~default:(Component.pack (module Component.None.C) ())
+          |> Component.unpack_opt (module C)
+        in
+        (c, fetch rest a e)
+  in
+  let required = required query in
+  let is_candidate a =
+    Id.ComponentSet.subset required (Archetype.components a)
+    && Filter.matches filter (Archetype.components a)
+  in
 
-  let as_list (type a) (module C : Component.S with type t = a) (r : t) : a list
-      =
-    map
-      (function
-        | [ c ] -> Component.unpack (module C) c
-        | _ -> invalid_arg "Expected exactly one component in each entity")
-      r
+  let build_result a =
+    Archetype.entities a |> Id.EntitySet.to_list
+    |> List.map (fun e -> (e, fetch query a e))
+  in
 
-  let as_single (type a) (module C : Component.S with type t = a) (r : t) :
-      a option =
-    match single r with
-    | Some [ c ] -> Some (Component.unpack (module C) c)
-    | _ -> None
-end
+  archetypes |> List.filter is_candidate |> List.concat_map build_result
 
-type term = Required of Id.Component.t | Optional of Id.Component.t
-type t = { terms : term list; filter : Filter.t }
+type _ set =
+  | Single : 'a. 'a t -> (Id.Entity.t * 'a) list set
+  | Cons : 'a t * 'b set -> ('a t * 'b) set
 
-let create ?(filter = Filter.Wildcard) terms = { terms; filter }
-
-let required_components q =
-  q.terms |> List.filter_map (function Required c -> Some c | _ -> None)
-
-let evaluate q archetypes =
-  if List.is_empty q.terms then []
-  else
-    let matches_filter a = Filter.matches q.filter (Archetype.components a) in
-
-    let fetch_components a e =
-      let get_component = Archetype.query a e in
-      List.map
-        (function
-          | Required c -> get_component c |> Option.get
-          | Optional c ->
-              get_component c
-              |> Option.value
-                   ~default:(Component.pack (module Component.None.C) ()))
-        q.terms
-    in
-
-    let build_result a =
-      Archetype.entities a |> Id.EntitySet.to_list
-      |> List.map (fun e -> (e, fetch_components a e))
-    in
-
-    archetypes |> List.filter matches_filter |> List.concat_map build_result
+let ( ^^ ) comp rest = QCons (comp, rest) (* Infix for QCons *)

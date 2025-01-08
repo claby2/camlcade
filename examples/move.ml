@@ -12,14 +12,17 @@ module Ball = struct
 end
 
 let move_ball =
-  let query q =
-    let open Query in
-    let t =
-      q (create ~filter:(Filter.With Ball.C.id) [ Required Transform.C.id ])
+  let query w =
+    let transforms =
+      World.query ~filter:(Query.Filter.With Ball.C.id) w
+        Query.(Required (module Transform.C) ^^ QNil)
+      |> List.map (fun (_, (t, ())) -> t)
     in
-    let k = q (create [ Required Input.Keyboard.C.id ]) in
-    ( t |> Query.Result.as_list (module Transform.C),
-      k |> Query.Result.as_single (module Input.Keyboard.C) |> Option.get )
+    let _, (k, ()) =
+      World.query w Query.(Required (module Input.Keyboard.C) ^^ QNil)
+      |> List.hd
+    in
+    (transforms, k)
   in
   let move (transforms, keyboard) =
     let w_pressed = Input.Keyboard.is_pressed keyboard `W in
