@@ -10,6 +10,8 @@ module Point : sig
   val create : ?color:Math.Vec3.t -> ?attenuation:Math.Vec3.t -> unit -> t
   val color : t -> Math.Vec3.t
   val attenuation : t -> Math.Vec3.t
+  val set_color : t -> Math.Vec3.t -> unit
+  val set_attenuation : t -> Math.Vec3.t -> unit
 
   module C : Ecs.Component.S with type t = t
 end
@@ -23,6 +25,8 @@ module Directional : sig
   val create : ?color:Math.Vec3.t -> ?attenuation:Math.Vec3.t -> unit -> t
   val color : t -> Math.Vec3.t
   val attenuation : t -> Math.Vec3.t
+  val set_color : t -> Math.Vec3.t -> unit
+  val set_attenuation : t -> Math.Vec3.t -> unit
 
   module C : Ecs.Component.S with type t = t
 end
@@ -47,6 +51,8 @@ module Spot : sig
   val angle : t -> float
   val set_penumbra : t -> float -> unit
   val set_angle : t -> float -> unit
+  val set_color : t -> Math.Vec3.t -> unit
+  val set_attenuation : t -> Math.Vec3.t -> unit
 
   module C : Ecs.Component.S with type t = t
 end

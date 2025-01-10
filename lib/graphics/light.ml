@@ -2,13 +2,15 @@ let default_color = Math.Vec3.v 1. 1. 1.
 let default_attenuation = Math.Vec3.v 1. 0. 0.
 
 module Point = struct
-  type t = { color : Math.Vec3.t; attenuation : Math.Vec3.t }
+  type t = { mutable color : Math.Vec3.t; mutable attenuation : Math.Vec3.t }
 
   let create ?(color = default_color) ?(attenuation = default_attenuation) () =
     { color; attenuation }
 
   let color t = t.color
   let attenuation t = t.attenuation
+  let set_color t color = t.color <- color
+  let set_attenuation t attenuation = t.attenuation <- attenuation
 
   module C = Ecs.Component.Make (struct
     type inner = t
@@ -16,13 +18,15 @@ module Point = struct
 end
 
 module Directional = struct
-  type t = { color : Math.Vec3.t; attenuation : Math.Vec3.t }
+  type t = { mutable color : Math.Vec3.t; mutable attenuation : Math.Vec3.t }
 
   let create ?(color = default_color) ?(attenuation = default_attenuation) () =
     { color; attenuation }
 
   let color t = t.color
   let attenuation t = t.attenuation
+  let set_color t color = t.color <- color
+  let set_attenuation t attenuation = t.attenuation <- attenuation
 
   module C = Ecs.Component.Make (struct
     type inner = t
@@ -31,8 +35,8 @@ end
 
 module Spot = struct
   type t = {
-    color : Math.Vec3.t;
-    attenuation : Math.Vec3.t;
+    mutable color : Math.Vec3.t;
+    mutable attenuation : Math.Vec3.t;
     mutable penumbra : float;
     mutable angle : float;
   }
@@ -45,6 +49,8 @@ module Spot = struct
   let attenuation t = t.attenuation
   let penumbra t = t.penumbra
   let angle t = t.angle
+  let set_color t color = t.color <- color
+  let set_attenuation t attenuation = t.attenuation <- attenuation
   let set_penumbra t penumbra = t.penumbra <- penumbra
   let set_angle t angle = t.angle <- angle
 
