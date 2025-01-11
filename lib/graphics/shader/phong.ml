@@ -75,6 +75,9 @@ void main() {
   // Ambient
   fragColor += vec4(ka * material.ambient, 0.0);
 
+  vec3 viewDirection = normalize(worldSpaceCamera - worldSpacePosition);
+  vec3 worldSpaceNormal = normalize(worldSpaceNormal);
+
   for (int i = 0; i < lightCount; i++) {
     Light light = lights[i];
 
@@ -93,16 +96,15 @@ void main() {
     }
 
     // Diffuse
-    float nl = max(dot(normalize(worldSpaceNormal), lightDirection), 0.0);
+    float nl = max(dot(worldSpaceNormal, lightDirection), 0.0);
     fragColor += vec4(spotFactor * fAtt * kd * nl * material.diffuse * light.color, 0.0);
 
-    // Specular
-    vec3 r = reflect(-lightDirection, normalize(worldSpaceNormal));
-    vec3 e = normalize(worldSpaceCamera - worldSpacePosition);
-    float re = clamp(dot(r, e), 0.0, 1.0);
-    if (re == 0.0 && material.shininess <= 0.0) continue;
-    float reShininess = pow(re, material.shininess);
-    fragColor += spotFactor * fAtt * vec4(ks * reShininess * material.specular * light.color, 0.0);
+    // Specular (Blinn-Phong)
+    vec3 halfDir = normalize(lightDirection + viewDirection);
+    float specAngle = max(dot(halfDir, worldSpaceNormal), 0.0);
+    if (specAngle == 0.0 && material.shininess <= 0.0) continue;
+    float specular = pow(specAngle, material.shininess);
+    fragColor += spotFactor * fAtt * vec4(ks * specular * material.specular * light.color, 0.0);
   }
 
   fragColor = clamp(fragColor, 0.0, 1.0);

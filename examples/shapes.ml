@@ -13,7 +13,6 @@ module Shape = struct
 end
 
 let rotate =
-  let last_timestamp = ref None in
   let query w =
     let transforms =
       World.query ~filter:(Query.Filter.With Shape.C.id) w
@@ -22,20 +21,10 @@ let rotate =
     in
     transforms
   in
-  let rotate transforms =
-    List.iter
-      (fun (t : Transform.t) ->
-        let last_timestamp =
-          match !last_timestamp with
-          | None ->
-              last_timestamp := Some (Unix.gettimeofday ());
-              0.
-          | Some t -> t
-        in
+  let rotate =
+    List.iter (fun t ->
         Transform.set_rotation t
-          (Math.Quat.rot3_zyx
-             (Math.Vec3.v 0.0 (Unix.gettimeofday () -. last_timestamp) 0.0)))
-      transforms
+          (Math.Quat.rot3_zyx (Math.Vec3.v 0.0 (Unix.gettimeofday ()) 0.0)))
   in
   System.make query (System.Query rotate)
 
