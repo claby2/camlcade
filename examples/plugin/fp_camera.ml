@@ -27,25 +27,25 @@ let handle_keyboard factor =
     (if d then move := Math.Vec3.(add !move (normalize (cross forward up))));
     Math.Vec3.normalize !move
   in
-  let move = function
-    | transforms, Some keyboard ->
+  let move (transforms, keyboard) =
+    match keyboard with
+    | Some keyboard ->
+        let is_pressed = Input.Keyboard.is_pressed keyboard in
+        let w = is_pressed `W in
+        let a = is_pressed `A in
+        let s = is_pressed `S in
+        let d = is_pressed `D in
+        let space = is_pressed `Space in
+        let shift = is_pressed `Lshift in
+
         transforms
         |> List.iter (fun transform ->
-               let is_pressed = Input.Keyboard.is_pressed keyboard in
-               let w = is_pressed `W in
-               let a = is_pressed `A in
-               let s = is_pressed `S in
-               let d = is_pressed `D in
-
                (* Handle WASD movement *)
                let delta = calculate_move transform w a s d in
                if Math.Vec3.norm delta > 0. then
                  Transform.set_translation transform
                    Math.Vec3.(
                      add (Transform.translation transform) (smul factor delta));
-
-               let space = is_pressed `Space in
-               let shift = is_pressed `Lshift in
 
                (* Handle space and shift movement *)
                let x, y, z =
@@ -57,7 +57,7 @@ let handle_keyboard factor =
                if shift then
                  Transform.set_translation transform
                    (Math.Vec3.v x (y -. factor) z))
-    | _ -> ()
+    | None -> ()
   in
   System.make query (System.Query move)
 
@@ -88,12 +88,13 @@ let handle_mouse sensitivity =
     in
     Transform.set_rotation transform new_rotation
   in
-  let move = function
-    | transforms, Some mouse_motion ->
+  let move (transforms, mouse_motion) =
+    match mouse_motion with
+    | Some mouse_motion ->
         Input.Mouse.Motion_event.read mouse_motion
         |> List.iter (fun motion ->
                transforms |> List.iter (update_rotation motion))
-    | _ -> ()
+    | None -> ()
   in
   System.make query (System.Query move)
 
