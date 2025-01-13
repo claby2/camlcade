@@ -1,3 +1,3 @@
 (executables
  (public_names bounce disco first_person move shapes spawn)
- (libraries camlcade))
+ (libraries camlcade plugin))
