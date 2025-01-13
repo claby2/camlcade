@@ -34,6 +34,12 @@ let set_translation t v = t.translation <- v
 let set_rotation t q = t.rotation <- q
 let set_scale t v = t.scale <- v
 
+let set_look_to t ?(up = Math.Vec3.oy) dir =
+  t.rotation <- rotation (with_look_to ~up dir t)
+
+let set_look_at t ?(up = Math.Vec3.oy) target =
+  t.rotation <- rotation (with_look_at ~up target t)
+
 let compute_matrix t =
   let x_axis, y_axis, z_axis = Math.Quat.to_axes t.rotation in
   let sx, sy, sz = Math.Vec3.to_tuple t.scale in

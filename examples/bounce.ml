@@ -1,4 +1,7 @@
-(** Bounce a ball up and down. *)
+(** Bounce a ball up and down.
+
+    Press `F` to follow the ball with the camera. Press `R` to restart the ball
+    at the top. *)
 
 open Camlcade
 open Ecs
@@ -71,6 +74,33 @@ let restart_ball =
   in
   System.make query (System.Query restart)
 
+let camera_follow_ball =
+  let query w =
+    let _, (k, ()) =
+      World.query w Query.(Req (module Input.Keyboard.C) @ Nil) |> List.hd
+    in
+    let _, (ball_t, ()) =
+      World.query ~filter:(Query.Filter.With Ball.C.id) w
+        Query.(Req (module Transform.C) @ Nil)
+      |> List.hd
+    in
+    let _, (camera_t, ()) =
+      World.query ~filter:(Query.Filter.With Graphics.Camera3d.C.id) w
+        Query.(Req (module Transform.C) @ Nil)
+      |> List.hd
+    in
+    (k, ball_t, camera_t)
+  in
+  let follow = ref false in
+  let follow (k, ball_t, camera_t) =
+    if Input.Keyboard.is_just_pressed k `F then follow := not !follow;
+    if !follow then
+      let ball_position = Transform.translation ball_t in
+      Transform.set_look_at camera_t ball_position
+    else Transform.set_look_at camera_t Math.Vec3.oy
+  in
+  System.make query (System.Query follow)
+
 let plugin w =
   let open Graphics in
   let _light =
@@ -126,7 +156,8 @@ let plugin w =
   in
 
   World.add_system w Scheduler.Update simulate_ball;
-  World.add_system w Scheduler.Update restart_ball
+  World.add_system w Scheduler.Update restart_ball;
+  World.add_system w Scheduler.Update camera_follow_ball
 
 let () =
   let app =

@@ -54,6 +54,14 @@ val set_rotation : t -> Math.Quat.t -> unit
 val set_scale : t -> Math.Vec3.t -> unit
 (** Set the scale of the transform. *)
 
+val set_look_to : t -> ?up:Math.Vec3.t -> Math.Vec3.t -> unit
+(** Set the rotation of the transform to look in the direction [dir] with the up
+    vector [up]. *)
+
+val set_look_at : t -> ?up:Math.Vec3.t -> Math.Vec3.t -> unit
+(** Set the rotation of the transform to look at the target [target] with the up
+    vector [up]. *)
+
 (** {1:compute Compute} *)
 
 val compute_matrix : t -> Math.Mat4.t
