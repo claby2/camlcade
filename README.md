@@ -22,6 +22,10 @@ Run an example with:
 dune exec shapes
 ```
 
+https://github.com/user-attachments/assets/8d5ea29c-ec0d-452f-b60a-a0c7129d0e10
+
+https://github.com/user-attachments/assets/95a5e881-ff3a-4c3d-b545-769d68b85b8e
+
 ## Development
 
 ### Project Structure
