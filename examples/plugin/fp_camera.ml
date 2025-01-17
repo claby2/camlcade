@@ -98,6 +98,19 @@ let handle_mouse sensitivity =
   in
   System.make query (System.Query move)
 
-let plugin ?(mouse_sensitivity = 0.001) ?(move_factor = 0.001) w =
+let set_fullscreen =
+  System.make
+    (fun w ->
+      World.query w Query.(Req (module Graphics.Context.C) @ Nil)
+      |> List.map (fun (_, (c, ())) -> c))
+    (System.Query
+       (List.iter (fun context ->
+            Graphics.Context.set_window_fullscreen context
+              Graphics.Context.Window.fullscreen;
+            Graphics.Context.set_relative_mouse_mode true)))
+
+let plugin ?(mouse_sensitivity = 0.001) ?(move_factor = 0.001)
+    ?(fullscreen = false) w =
+  if fullscreen then World.add_system w Scheduler.Startup set_fullscreen;
   World.add_system w Scheduler.Update (handle_keyboard move_factor);
   World.add_system w Scheduler.Update (handle_mouse mouse_sensitivity)

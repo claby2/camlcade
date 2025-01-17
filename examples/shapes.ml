@@ -32,7 +32,7 @@ let add_shape w primitive x y z =
   World.add_entity w
   |> World.with_component w
        (module Graphics.Mesh3d.C)
-       (Graphics.Mesh3d.of_primitive primitive)
+       (Graphics.Primitive.to_mesh3d primitive)
   |> World.with_component w
        (module Transform.C)
        Transform.(of_xyz x y z |> with_scale (Math.Vec3.v 1.3 1.3 1.3))

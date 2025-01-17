@@ -7,25 +7,12 @@ open Plugin
 open Camlcade
 open Ecs
 
-let setup_window =
-  System.make
-    (fun w ->
-      let _, (c, ()) =
-        World.query w Query.(Req (module Graphics.Context.C) @ Nil) |> List.hd
-      in
-      c)
-    (System.Query
-       (fun context ->
-         Graphics.Context.set_window_fullscreen context
-           Graphics.Context.Window.fullscreen;
-         Graphics.Context.set_relative_mouse_mode true))
-
 let plugin w =
   let _cuboid =
     World.add_entity w
     |> World.with_component w
          (module Graphics.Mesh3d.C)
-         (Graphics.Mesh3d.of_primitive (Graphics.Primitive.Cuboid.create ()))
+         (Graphics.Primitive.to_mesh3d (Graphics.Primitive.Cuboid.create ()))
     |> World.with_component w (module Graphics.Shader.Normal.C) ()
   in
 
@@ -38,15 +25,14 @@ let plugin w =
     |> World.with_component w (module Transform.C) (Transform.identity ())
     |> World.with_component w (module Fp_camera.C) ()
   in
-
-  World.add_system w Scheduler.Startup setup_window
+  ()
 
 let () =
   let app =
     App.create ()
     |> App.add_plugin Input.plugin
     |> App.add_plugin Graphics.plugin
-    |> App.add_plugin Fp_camera.plugin
+    |> App.add_plugin (Fp_camera.plugin ~fullscreen:true)
     |> App.add_plugin plugin
   in
 

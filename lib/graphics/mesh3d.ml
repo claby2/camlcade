@@ -10,9 +10,6 @@ type t = mesh3d ref
 
 let of_vertex_mesh mesh = ref (Staged { mesh })
 
-let of_primitive primitive =
-  Vertex_mesh.of_primitive primitive |> of_vertex_mesh
-
 let vertex_mesh t =
   match !t with
   | Staged { mesh } | Initialized { mesh; _ } -> mesh
@@ -41,7 +38,7 @@ let rec install t =
   let aux mesh vao vbo =
     with_vao vao (fun () ->
         with_vbo vbo (fun () ->
-            let vertex_data = Vertex_mesh.vertex_data mesh in
+            let vertex_data = Vertex_mesh.data mesh in
             let varray =
               bigarray_create Bigarray.float32 (Array.length vertex_data)
             in
@@ -52,11 +49,11 @@ let rec install t =
 
             let size_of_float = 4 in
             let stride = Vertex_mesh.vertex_size mesh * size_of_float in
-            let attribute_info = Vertex_mesh.attribute_info mesh in
             let offset = ref 0 in
-            attribute_info
-            |> Seq.iter (fun info ->
-                   let { Vertex_mesh.Attribute.index; size } = info in
+            Vertex_mesh.attributes mesh
+            |> Hashtbl.to_seq |> List.of_seq
+            |> List.sort (fun (index1, _) (index2, _) -> compare index2 index1)
+            |> List.iter (fun (index, size) ->
                    Gl.enable_vertex_attrib_array index;
                    Gl.vertex_attrib_pointer index size Gl.float false stride
                      (`Offset (!offset * size_of_float));

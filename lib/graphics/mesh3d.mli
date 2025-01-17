@@ -5,11 +5,6 @@ type t
 val of_vertex_mesh : Vertex_mesh.t -> t
 (** Create a mesh component from a vertex mesh. *)
 
-val of_primitive : Primitive.t -> t
-(** Create a mesh component from a primitive.
-
-    Internally, this creates a vertex mesh from the primitive. *)
-
 val vertex_mesh : t -> Vertex_mesh.t
 (** Return the vertex mesh of the mesh component. *)
 

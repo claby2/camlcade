@@ -4,4 +4,4 @@ val create :
   ?z_length:float ->
   ?param1:int ->
   unit ->
-  Shape.t
+  float list

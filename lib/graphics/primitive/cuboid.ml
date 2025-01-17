@@ -1,26 +1,22 @@
 open Util
 
-type config = {
-  param1 : int;
-  half_size : Math.Vec3.t;
-  positions : float list ref;
-  normals : float list ref;
-}
+type config = { param1 : int; half_size : Math.Vec3.t; data : float list ref }
 
 let add_tile c topl topr botl botr =
-  add_vec3 c.positions topl;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (botl - topl) (botr - topl)));
-  add_vec3 c.positions botl;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (botr - botl) (topl - botl)));
-  add_vec3 c.positions botr;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (topl - botr) (botl - botr)));
+  let add v = add_vec3 c.data v in
+  add topl;
+  add Math.Vec3.(normalize (cross (botl - topl) (botr - topl)));
+  add botl;
+  add Math.Vec3.(normalize (cross (botr - botl) (topl - botl)));
+  add botr;
+  add Math.Vec3.(normalize (cross (topl - botr) (botl - botr)));
 
-  add_vec3 c.positions topl;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (botr - topl) (topr - topl)));
-  add_vec3 c.positions botr;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (topr - botr) (topl - botr)));
-  add_vec3 c.positions topr;
-  add_vec3 c.normals Math.Vec3.(normalize (cross (topl - topr) (botr - topr)))
+  add topl;
+  add Math.Vec3.(normalize (cross (botr - topl) (topr - topl)));
+  add botr;
+  add Math.Vec3.(normalize (cross (topr - botr) (topl - botr)));
+  add topr;
+  add Math.Vec3.(normalize (cross (topl - topr) (botr - topr)))
 
 let add_face c botl topl topr =
   let size = 1. /. float_of_int c.param1 in
@@ -48,9 +44,9 @@ let construct c =
   add (v x (-.y) (-.z)) (v x y (-.z)) (v (-.x) y (-.z));
   add (v x y (-.z)) (v x y z) (v (-.x) y z);
   add (v x (-.y) z) (v x (-.y) (-.z)) (v (-.x) (-.y) (-.z));
-  Shape.{ positions = !(c.positions); normals = !(c.normals) }
+  !(c.data)
 
 let create ?(x_length = 1.) ?(y_length = 1.) ?(z_length = 1.) ?(param1 = 2) () =
   let param1 = max param1 1 in
   let half_size = Math.Vec3.(smul 0.5 (v x_length y_length z_length)) in
-  construct { half_size; param1; positions = ref []; normals = ref [] }
+  construct { half_size; param1; data = ref [] }

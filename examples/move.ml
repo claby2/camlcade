@@ -55,7 +55,7 @@ let plugin w =
     World.add_entity w
     |> World.with_component w
          (module Graphics.Mesh3d.C)
-         (Graphics.Mesh3d.of_primitive
+         (Graphics.Primitive.to_mesh3d
             (Graphics.Primitive.Sphere.create ~param1:10 ~param2:10 ()))
     |> World.with_component w (module Transform.C) (Transform.identity ())
     |> World.with_component w (module Graphics.Shader.Normal.C) ()

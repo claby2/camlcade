@@ -7,7 +7,7 @@ let add_random_ball w =
   World.add_entity w
   |> World.with_component w
        (module Graphics.Mesh3d.C)
-       (Graphics.Mesh3d.of_primitive
+       (Graphics.Primitive.to_mesh3d
           (Graphics.Primitive.Sphere.create ~param1:20 ~param2:20 ()))
   |> World.with_component w
        (module Transform.C)

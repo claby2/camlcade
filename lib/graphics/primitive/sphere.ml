@@ -4,14 +4,13 @@ type config = {
   radius : float;
   param1 : int;
   param2 : int;
-  positions : float list ref;
-  normals : float list ref;
+  data : float list ref;
 }
 
 let add_tile c tl tr bl br =
   let add v =
-    add_vec3 c.positions v;
-    add_vec3 c.normals (Math.Vec3.normalize v)
+    add_vec3 c.data v;
+    add_vec3 c.data (Math.Vec3.normalize v)
   in
   add tl;
   add bl;
@@ -41,9 +40,9 @@ let construct c =
     let theta' = float_of_int (i + 1) *. step in
     add_wedge c theta theta'
   done;
-  Shape.{ positions = !(c.positions); normals = !(c.normals) }
+  !(c.data)
 
 let create ?(radius = 0.5) ?(param1 = 2) ?(param2 = 3) () =
   let param1 = max param1 2 in
   let param2 = max param2 3 in
-  construct { radius; param1; param2; positions = ref []; normals = ref [] }
+  construct { radius; param1; param2; data = ref [] }

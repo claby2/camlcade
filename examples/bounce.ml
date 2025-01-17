@@ -117,7 +117,7 @@ let plugin w =
     World.add_entity w
     |> World.with_component w
          (module Mesh3d.C)
-         (Mesh3d.of_primitive
+         (Primitive.to_mesh3d
             (Primitive.Cuboid.create ~x_length:100. ~y_length:0.1 ~z_length:100.
                ()))
     |> World.with_component w
@@ -142,7 +142,7 @@ let plugin w =
     World.add_entity w
     |> World.with_component w
          (module Mesh3d.C)
-         (Mesh3d.of_primitive
+         (Primitive.to_mesh3d
             (Primitive.Sphere.create ~param1:50 ~param2:50 ()))
     |> World.with_component w (module Shader.Phong.C) ()
     |> World.with_component w

@@ -7,4 +7,8 @@
 module C : Ecs.Component.S with type t = unit
 
 val plugin :
-  ?mouse_sensitivity:float -> ?move_factor:float -> Ecs.World.t -> unit
+  ?mouse_sensitivity:float ->
+  ?move_factor:float ->
+  ?fullscreen:bool ->
+  Ecs.World.t ->
+  unit

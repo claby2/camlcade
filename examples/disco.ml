@@ -70,7 +70,7 @@ let spawn_cube w position =
   |> World.with_component w (module Spin.C) ()
   |> World.with_component w
        (module Mesh3d.C)
-       (Mesh3d.of_primitive (Primitive.Cuboid.create ()))
+       (Primitive.to_mesh3d (Primitive.Cuboid.create ()))
   |> World.with_component w
        (module Transform.C)
        Transform.(identity () |> with_translation position)
@@ -85,7 +85,7 @@ let spawn_ground w =
   World.add_entity w
   |> World.with_component w
        (module Mesh3d.C)
-       (Mesh3d.of_primitive
+       (Primitive.to_mesh3d
           (Primitive.Cuboid.create ~x_length:25. ~y_length:0.1 ~z_length:25. ()))
   |> World.with_component w
        (module Material.C)

@@ -1,44 +1,31 @@
-module Attribute : sig
-  type info = { index : int; size : int }
-  type t
-
-  val create : index:int -> size:int -> float array -> t
-  val index : t -> int
-  val size : t -> int
-  val info : t -> info
-  val values : t -> float array
-  val compare : t -> t -> int
-end
-
-module AttributeSet : Set.S with type elt = Attribute.t
+(** Vertex mesh with attributes. *)
 
 type topology = TriangleList
 type t
 
-val create : topology -> t
-(** [create topology] creates a new mesh with the given topology *)
+val create : ?topology:topology -> unit -> t
+(** Creates a new vertex mesh. *)
 
 val topology : t -> topology
-(** [topology t] returns the topology of the mesh *)
+(** [topology t] returns the topology of the vertex mesh. *)
 
-val with_topology : topology -> t -> t
-(** [with_topology t topology] sets the topology of the mesh *)
+val set_topology : t -> topology -> unit
+(** [set_topology t topology] sets the topology of the vertex mesh. *)
 
-val with_attribute : Attribute.t -> t -> t
-(** [with_attribute t attr] adds the attribute to the mesh *)
+val attributes : t -> (int, int) Hashtbl.t
+(** [attributes t] returns the attributes of the vertex mesh. *)
 
-val of_primitive : Primitive.t -> t
-(** [of_primitive primitive] creates a mesh from the given primitive *)
+val set_attribute : t -> int -> int -> unit
+(** [set_attribute t index size] sets the attribute of the vertex mesh. *)
 
-val count_vertices : t -> int
-(** [count_vertices t] returns the minimum number of vertices reported by the
-    attributes *)
+val data : t -> float array
+(** [data t] returns the data of the vertex mesh. *)
+
+val set_data : t -> float array -> unit
+(** [set_data t data] sets the data of the vertex mesh. *)
 
 val vertex_size : t -> int
-(** [vertex_size t] returns the size of a vertex in the mesh *)
+(** [vertex_size t] returns the size of the vertex in the vertex mesh. *)
 
-val attribute_info : t -> Attribute.info Seq.t
-(** Returns the a sequence of attribute info ordered by index *)
-
-val vertex_data : t -> float array
-(** [vertex_data t] returns the interleaved vertex data *)
+val count_vertices : t -> int
+(** [count_vertices t] returns the number of vertices in the vertex mesh. *)
