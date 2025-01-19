@@ -60,6 +60,7 @@ module Grid = struct
     t.cells <- new_cells
 
   let update_vm t vertex_mesh =
+    (* TODO: only add visible faces/vertices. *)
     let open Graphics in
     let data = ref [] in
     for x = 0 to t.dimension - 1 do
@@ -70,12 +71,11 @@ module Grid = struct
             let cube = Primitive.Cuboid.create () in
             let rec shift = function
               | [] -> []
-              | nx :: ny :: nz :: px :: py :: pz :: rest ->
-                  nx :: ny :: nz
-                  :: (px +. float_of_int x -. (float_of_int t.dimension /. 2.))
+              | px :: py :: pz :: nx :: ny :: nz :: rest ->
+                  (px +. float_of_int x -. (float_of_int t.dimension /. 2.))
                   :: (py +. float_of_int y -. (float_of_int t.dimension /. 2.))
                   :: (pz +. float_of_int z -. (float_of_int t.dimension /. 2.))
-                  :: shift rest
+                  :: nx :: ny :: nz :: shift rest
               | _ -> failwith "Invalid list"
             in
             data := shift cube @ !data
@@ -167,4 +167,3 @@ let () =
   in
 
   App.run app
-

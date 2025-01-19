@@ -51,8 +51,7 @@ let rec install t =
             let stride = Vertex_mesh.vertex_size mesh * size_of_float in
             let offset = ref 0 in
             Vertex_mesh.attributes mesh
-            |> Hashtbl.to_seq |> List.of_seq
-            |> List.sort (fun (index1, _) (index2, _) -> compare index2 index1)
+            |> Hashtbl.to_seq |> List.of_seq |> List.sort compare
             |> List.iter (fun (index, size) ->
                    Gl.enable_vertex_attrib_array index;
                    Gl.vertex_attrib_pointer index size Gl.float false stride

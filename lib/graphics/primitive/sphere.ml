@@ -8,17 +8,17 @@ type config = {
 }
 
 let add_tile c tl tr bl br =
-  let add v =
-    add_vec3 c.data v;
-    add_vec3 c.data (Math.Vec3.normalize v)
+  let prepend v =
+    prepend_vec3 c.data (Math.Vec3.normalize v);
+    prepend_vec3 c.data v
   in
-  add tl;
-  add bl;
-  add br;
+  prepend tl;
+  prepend bl;
+  prepend br;
 
-  add tl;
-  add br;
-  add tr
+  prepend tl;
+  prepend br;
+  prepend tr
 
 let add_wedge c theta theta' =
   let step = Float.pi /. float_of_int c.param1 in

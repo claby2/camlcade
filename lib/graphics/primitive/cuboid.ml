@@ -3,20 +3,20 @@ open Util
 type config = { param1 : int; half_size : Math.Vec3.t; data : float list ref }
 
 let add_tile c topl topr botl botr =
-  let add v = add_vec3 c.data v in
-  add topl;
-  add Math.Vec3.(normalize (cross (botl - topl) (botr - topl)));
-  add botl;
-  add Math.Vec3.(normalize (cross (botr - botl) (topl - botl)));
-  add botr;
-  add Math.Vec3.(normalize (cross (topl - botr) (botl - botr)));
+  let prepend v = prepend_vec3 c.data v in
+  prepend Math.Vec3.(normalize (cross (botl - topl) (botr - topl)));
+  prepend topl;
+  prepend Math.Vec3.(normalize (cross (botr - botl) (topl - botl)));
+  prepend botl;
+  prepend Math.Vec3.(normalize (cross (topl - botr) (botl - botr)));
+  prepend botr;
 
-  add topl;
-  add Math.Vec3.(normalize (cross (botr - topl) (topr - topl)));
-  add botr;
-  add Math.Vec3.(normalize (cross (topr - botr) (topl - botr)));
-  add topr;
-  add Math.Vec3.(normalize (cross (topl - topr) (botr - topr)))
+  prepend Math.Vec3.(normalize (cross (botr - topl) (topr - topl)));
+  prepend topl;
+  prepend Math.Vec3.(normalize (cross (topr - botr) (topl - botr)));
+  prepend botr;
+  prepend Math.Vec3.(normalize (cross (topl - topr) (botr - topr)));
+  prepend topr
 
 let add_face c botl topl topr =
   let size = 1. /. float_of_int c.param1 in

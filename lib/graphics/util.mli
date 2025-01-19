@@ -23,4 +23,4 @@ val load_uniform1i : int -> int -> string -> unit
 val load_uniform1f : float -> int -> string -> unit
 val load_uniform3fv : Math.Vec3.t -> int -> string -> unit
 val check_gl_error : unit -> unit
-val add_vec3 : float list ref -> Math.Vec3.t -> unit
+val prepend_vec3 : float list ref -> Math.Vec3.t -> unit
