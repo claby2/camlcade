@@ -12,6 +12,9 @@ val ambient : t -> Math.Vec3.t
 val diffuse : t -> Math.Vec3.t
 val specular : t -> Math.Vec3.t
 val shininess : t -> float
+val set_ambient : t -> Math.Vec3.t -> unit
+val set_diffuse : t -> Math.Vec3.t -> unit
+val set_specular : t -> Math.Vec3.t -> unit
 val set_shininess : t -> float -> unit
 
 module C : Ecs.Component.S with type t = t
