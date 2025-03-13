@@ -147,17 +147,13 @@ let query w =
   let open Ecs in
   let cameras =
     World.query ~filter:(Query.Filter.With Camera.Camera3d.C.id) w
-      Query.(Req (module Camera.Projection.C) @ Opt (module Transform.C) @ Nil)
+      Query.[Req (module Camera.Projection.C); Opt (module Transform.C)]
     |> List.map (fun (_, (p, (t, ()))) -> (p, t))
   in
 
   let entities =
     World.query w ~filter:(Query.Filter.With C.id)
-      Query.(
-        Req (module Mesh3d.C)
-        @ Req (module Material.C)
-        @ Opt (module Transform.C)
-        @ Nil)
+      Query.[Req (module Mesh3d.C); Req (module Material.C); Opt (module Transform.C)]
     |> List.map (fun (_, (m3d, (m, (t, ())))) -> (m3d, m, t))
   in
   let parse_lights l =
@@ -166,17 +162,17 @@ let query w =
 
   let point_lights =
     World.query w
-      Query.(Req (module Light.Point.C) @ Opt (module Transform.C) @ Nil)
+      Query.[Req (module Light.Point.C); Opt (module Transform.C)]
     |> parse_lights
   in
   let directional_lights =
     World.query w
-      Query.(Req (module Light.Directional.C) @ Opt (module Transform.C) @ Nil)
+      Query.[Req (module Light.Directional.C); Opt (module Transform.C)]
     |> parse_lights
   in
   let spot_lights =
     World.query w
-      Query.(Req (module Light.Spot.C) @ Opt (module Transform.C) @ Nil)
+      Query.[Req (module Light.Spot.C); Opt (module Transform.C)]
     |> parse_lights
   in
   { cameras; entities; point_lights; directional_lights; spot_lights }

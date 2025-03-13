@@ -35,18 +35,18 @@ let test_required_components () =
   let required_eq q l =
     Id.ComponentSet.equal (required_ids q) (Id.ComponentSet.of_list l)
   in
-  let q = Nil in
+  let q = [] in
   assert (required_eq q []);
-  let q = Req (module Foo.C) @ Nil in
+  let q = Req (module Foo.C) :: [] in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Req (module Foo.C) @ Opt (module Bar.C) @ Nil in
+  let q = Req (module Foo.C) :: Opt (module Bar.C) :: [] in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Opt (module Bar.C) @ Opt (module Baz.C) @ Nil in
+  let q = Opt (module Bar.C) :: Opt (module Baz.C) :: [] in
   assert (required_eq q []);
 
-  let q = Req (module Foo.C) @ Opt (module Baz.C) @ Req (module Bar.C) @ Nil in
+  let q = Req (module Foo.C) :: Opt (module Baz.C) :: Req (module Bar.C) :: [] in
   assert (required_eq q [ Foo.C.id; Bar.C.id ])
 
 let test_evaluate () =

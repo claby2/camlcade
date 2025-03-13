@@ -31,7 +31,7 @@ end
 let simulate_ball =
   let query w =
     let _, (t, (b, ())) =
-      World.query w Query.(Req (module Transform.C) @ Req (module Ball.C) @ Nil)
+      World.query w Query.[Req (module Transform.C); Req (module Ball.C)]
       |> List.hd
     in
     (t, b)
@@ -58,10 +58,10 @@ let simulate_ball =
 let restart_ball =
   let query w =
     let _, (k, ()) =
-      World.query w Query.(Req (module Input.Keyboard.C) @ Nil) |> List.hd
+      World.query w Query.[Req (module Input.Keyboard.C)] |> List.hd
     in
     let _, (t, (b, ())) =
-      World.query w Query.(Req (module Transform.C) @ Req (module Ball.C) @ Nil)
+      World.query w Query.[Req (module Transform.C); Req (module Ball.C)]
       |> List.hd
     in
     (k, t, b)
@@ -77,16 +77,16 @@ let restart_ball =
 let camera_follow_ball =
   let query w =
     let _, (k, ()) =
-      World.query w Query.(Req (module Input.Keyboard.C) @ Nil) |> List.hd
+      World.query w Query.[Req (module Input.Keyboard.C)] |> List.hd
     in
     let _, (ball_t, ()) =
       World.query ~filter:(Query.Filter.With Ball.C.id) w
-        Query.(Req (module Transform.C) @ Nil)
+        Query.[Req (module Transform.C)]
       |> List.hd
     in
     let _, (camera_t, ()) =
       World.query ~filter:(Query.Filter.With Graphics.Camera3d.C.id) w
-        Query.(Req (module Transform.C) @ Nil)
+        Query.[Req (module Transform.C)]
       |> List.hd
     in
     (k, ball_t, camera_t)
