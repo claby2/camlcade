@@ -96,7 +96,7 @@ let spawn_ground w =
 let spin =
   let query w =
     World.query ~filter:(Query.Filter.With Spin.C.id) w
-      Query.(Req (module Transform.C) @ Nil)
+      Query.[Req (module Transform.C)]
     |> List.map (fun (_, (t, ())) -> t)
   in
   let spin =
@@ -112,7 +112,7 @@ let update_disco_balls =
   let open Graphics in
   let query w =
     World.query w
-      Query.(Req (module Light.Point.C) @ Req (module Disco_ball.C) @ Nil)
+      Query.[Req (module Light.Point.C); Req (module Disco_ball.C)]
     |> List.map (fun (_, (p, (db, ()))) -> (p, db))
   in
   let dim_color color =

@@ -22,7 +22,7 @@ type 'a term =
       (** An optional component will be None if an entity does not have it. *)
 
 (** The type of a query. *)
-type 'a t = Nil : unit t | Cons : 'a term * 'b t -> ('a * 'b) t
+type 'a t = [] : unit t | (::) : 'a term * 'b t -> ('a * 'b) t
 
 val required_ids : 'a t -> Id.ComponentSet.t
 (** Returns the set of required component IDs for the given query. *)
@@ -30,6 +30,3 @@ val required_ids : 'a t -> Id.ComponentSet.t
 val evaluate :
   ?filter:Filter.t -> 'a t -> Archetype.t list -> (Id.Entity.t * 'a) list
 (** Evaluates the given query on the given archetypes. *)
-
-val ( @ ) : 'a term -> 'b t -> ('a * 'b) t
-(** Composes query terms. *)

@@ -24,12 +24,12 @@ type _ term =
   | Req : (module Component.S with type t = 'a) -> 'a term
   | Opt : (module Component.S with type t = 'a) -> 'a option term
 
-type _ t = Nil : unit t | Cons : 'a term * 'b t -> ('a * 'b) t
+type _ t = [] : unit t | (::) : 'a term * 'b t -> ('a * 'b) t
 
 let rec required_ids : type a. a t -> _ = function
-  | Nil -> Id.ComponentSet.empty
-  | Cons (Req (module C), rest) -> Id.ComponentSet.add C.id (required_ids rest)
-  | Cons (Opt (module C), rest) -> required_ids rest
+  | [] -> Id.ComponentSet.empty
+  | Req (module C) :: rest -> Id.ComponentSet.add C.id (required_ids rest)
+  | Opt (module C) :: rest -> required_ids rest
 
 let evaluate : type a.
     ?filter:Filter.t -> a t -> Archetype.t list -> (Id.Entity.t * a) list =
@@ -38,13 +38,13 @@ let evaluate : type a.
    fun q a e ->
     let get_component = Archetype.query a e in
     match q with
-    | Nil -> ()
-    | Cons (Req (module C), rest) ->
+    | [] -> ()
+    | Req (module C) :: rest ->
         let c =
           get_component C.id |> Option.get |> Component.unpack (module C)
         in
         (c, fetch rest a e)
-    | Cons (Opt (module C), rest) ->
+    | Opt (module C) :: rest ->
         (* TODO: Rethink this maybe *)
         let c =
           get_component C.id
@@ -65,5 +65,3 @@ let evaluate : type a.
   in
 
   archetypes |> List.filter is_candidate |> List.concat_map build_result
-
-let ( @ ) comp rest = Cons (comp, rest) (* Infix for QCons *)
