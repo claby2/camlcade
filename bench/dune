@@ -1,4 +1,4 @@
 (executable
-  (public_name bench)
-  (name benchmark)
-  (libraries core_unix.command_unix core core_bench camlcade))
+ (public_name bench)
+ (name benchmark)
+ (libraries core_unix.command_unix core core_bench camlcade))

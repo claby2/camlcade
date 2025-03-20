@@ -92,11 +92,11 @@ end
 let step =
   let query w =
     let _, (keyboard, ()) =
-      World.query w Query.[Req (module Input.Keyboard.C)] |> List.hd
+      World.query w Query.[ Req (module Input.Keyboard.C) ] |> List.hd
     in
     let _, (grid, (mesh, ())) =
       World.query w
-        Query.[Req (module Grid.C); Req (module Graphics.Mesh3d.C)]
+        Query.[ Req (module Grid.C); Req (module Graphics.Mesh3d.C) ]
       |> List.hd
     in
     (keyboard, grid, mesh)

@@ -15,11 +15,11 @@ let move_ball =
   let query w =
     let transforms =
       World.query ~filter:(Query.Filter.With Ball.C.id) w
-        Query.[Req (module Transform.C)]
+        Query.[ Req (module Transform.C) ]
       |> List.map (fun (_, (t, ())) -> t)
     in
     let _, (k, ()) =
-      World.query w Query.[Req (module Input.Keyboard.C)] |> List.hd
+      World.query w Query.[ Req (module Input.Keyboard.C) ] |> List.hd
     in
     (transforms, k)
   in

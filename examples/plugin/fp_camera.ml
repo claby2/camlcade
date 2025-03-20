@@ -8,11 +8,11 @@ let handle_keyboard factor =
   let query w =
     let transforms =
       World.query ~filter:(Query.Filter.With C.id) w
-        Query.[Req (module Transform.C)]
+        Query.[ Req (module Transform.C) ]
       |> List.map (fun (_, (t, ())) -> t)
     in
     let k =
-      World.query w Query.[Req (module Input.Keyboard.C)]
+      World.query w Query.[ Req (module Input.Keyboard.C) ]
       |> List.map (fun (_, (k, ())) -> k)
     in
     (transforms, match k with k :: _ -> Some k | _ -> None)
@@ -65,11 +65,11 @@ let handle_mouse sensitivity =
   let query w =
     let transforms =
       World.query ~filter:(Query.Filter.With C.id) w
-        Query.[Req (module Transform.C)]
+        Query.[ Req (module Transform.C) ]
       |> List.map (fun (_, (t, ())) -> t)
     in
     let mm =
-      World.query w Query.[Req (module Input.Mouse.Motion_event.C)]
+      World.query w Query.[ Req (module Input.Mouse.Motion_event.C) ]
       |> List.map (fun (_, (mm, ())) -> mm)
     in
     (transforms, match mm with mm :: _ -> Some mm | _ -> None)
@@ -101,7 +101,7 @@ let handle_mouse sensitivity =
 let set_fullscreen =
   System.make
     (fun w ->
-      World.query w Query.[Req (module Graphics.Context.C)]
+      World.query w Query.[ Req (module Graphics.Context.C) ]
       |> List.map (fun (_, (c, ())) -> c))
     (System.Query
        (List.iter (fun context ->

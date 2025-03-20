@@ -40,13 +40,13 @@ let test_required_components () =
   let q = Req (module Foo.C) :: [] in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Req (module Foo.C) :: Opt (module Bar.C) :: [] in
+  let q = [ Req (module Foo.C); Opt (module Bar.C) ] in
   assert (required_eq q [ Foo.C.id ]);
 
-  let q = Opt (module Bar.C) :: Opt (module Baz.C) :: [] in
+  let q = [ Opt (module Bar.C); Opt (module Baz.C) ] in
   assert (required_eq q []);
 
-  let q = Req (module Foo.C) :: Opt (module Baz.C) :: Req (module Bar.C) :: [] in
+  let q = [ Req (module Foo.C); Opt (module Baz.C); Req (module Bar.C) ] in
   assert (required_eq q [ Foo.C.id; Bar.C.id ])
 
 let test_evaluate () =

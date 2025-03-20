@@ -22,7 +22,7 @@ type 'a term =
       (** An optional component will be None if an entity does not have it. *)
 
 (** The type of a query. *)
-type 'a t = [] : unit t | (::) : 'a term * 'b t -> ('a * 'b) t
+type 'a t = [] : unit t | ( :: ) : 'a term * 'b t -> ('a * 'b) t
 
 val required_ids : 'a t -> Id.ComponentSet.t
 (** Returns the set of required component IDs for the given query. *)

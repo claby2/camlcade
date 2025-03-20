@@ -1,4 +1,4 @@
 (library
-  (public_name camlcade.input)
-  (name input)
-  (libraries ecs tsdl))
+ (public_name camlcade.input)
+ (name input)
+ (libraries ecs tsdl))

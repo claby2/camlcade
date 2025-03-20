@@ -45,8 +45,7 @@ let t3 =
       done;
       fun () ->
         let results =
-          World.query world
-            Query.[Req (module Foo.C); Req (module Bar.C)]
+          World.query world Query.[ Req (module Foo.C); Req (module Bar.C) ]
         in
         assert (List.length results = param))
 

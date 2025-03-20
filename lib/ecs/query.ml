@@ -24,7 +24,7 @@ type _ term =
   | Req : (module Component.S with type t = 'a) -> 'a term
   | Opt : (module Component.S with type t = 'a) -> 'a option term
 
-type _ t = [] : unit t | (::) : 'a term * 'b t -> ('a * 'b) t
+type _ t = [] : unit t | ( :: ) : 'a term * 'b t -> ('a * 'b) t
 
 let rec required_ids : type a. a t -> _ = function
   | [] -> Id.ComponentSet.empty

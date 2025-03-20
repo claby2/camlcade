@@ -1,4 +1,4 @@
 (library
-  (public_name camlcade.transform)
-  (name transform)
-  (libraries ecs math))
+ (public_name camlcade.transform)
+ (name transform)
+ (libraries ecs math))

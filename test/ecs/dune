@@ -1,9 +1,8 @@
 (tests
-  (names
-    test_archetype
-    test_query
-    test_world_entities
-    test_world_components
-    test_world_systems)
-  (libraries camlcade))
-
+ (names
+  test_archetype
+  test_query
+  test_world_entities
+  test_world_components
+  test_world_systems)
+ (libraries camlcade))
